@@ -1,0 +1,93 @@
+# Welcome to Serverless!
+#
+# This file is the main config file for your service.
+# It's very minimal at this point and uses default values.
+# You can always add more config options for more control.
+# We've included some commented out config examples here.
+# Just uncomment any of them to get that config option.
+#
+# For full config options, check the docs:
+#    docs.serverless.com
+#
+# Happy Coding!
+
+service: okta-smartfhir-auth-demo
+plugins:
+  - serverless-s3-sync
+  - serverless-apigateway-service-proxy
+provider:
+  name: aws
+  runtime: nodejs12.x
+  stage: dev
+  region: us-east-1
+  
+  logs:
+    restApi: true
+    
+  environment:
+    TOKEN_ENDPOINT: https://<<YOUROKTA_API_AM_URL>>/v1/token
+    OKTA_ORG: <<youroktaorg.okta.com>>
+    
+#Lambda function for our token proxy.
+functions:
+  smart-token-proxy:
+    handler: handler.smartTokenProxy
+    events:
+      - http:
+          path: /token
+          method: POST
+      - http:
+          path: /Claim/{proxy+}
+          method: ANY
+          cors: true
+          integration: http-proxy
+          request:
+            uri: http://hapi.fhir.org/baseR4/Claim/{proxy}
+            parameters:
+              paths:
+                proxy: true
+
+      - http:
+          path: /Patient/{proxy+}
+          method: ANY
+          cors: true
+          integration: http-proxy
+          request:
+            uri: http://hapi.fhir.org/baseR4/Patient/{proxy}
+            parameters:
+              paths:
+                proxy: true                
+       
+custom:
+#Deploy the metadata static files to S3.
+  s3Sync:
+    - bucketName: okta-smartfhir-auth-demo-metadata
+      localDir: metadata_files
+      
+#Deploy the API gateway endpoints to host the metadata files.
+  apiGatewayServiceProxies:
+    - s3:
+        path: /metadata
+        method: get
+        action: GetObject
+        bucket:
+          Ref: MetadataBucket
+        key: legacy_metadata.json
+        cors: true
+
+    - s3:
+        path: /smart-configuration
+        method: get
+        action: GetObject
+        bucket:
+          Ref: MetadataBucket
+        key: smart_configuration.json
+        cors: true        
+        
+# Define the S3 bucket that will hold the public metadata resources.
+resources:
+  Resources:
+    MetadataBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: okta-smartfhir-auth-demo-metadata

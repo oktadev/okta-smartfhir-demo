@@ -1,0 +1,11 @@
+{
+  "authorization_endpoint": "<<YOUROKTA_API_AM_URL>>/v1/authorize",
+  "token_endpoint": "<<YOUR_API_ENDPOINT_ONCE_YOU_DEPLOY_THIS>>/token",
+  "token_endpoint_auth_methods_supported": ["client_secret_basic"],
+  "registration_endpoint": "https://<<YOUROKTA_ORG_URL>>/oauth2/v1/clients",
+  "scopes_supported": ["openid", "profile", "launch", "launch/patient", "patient/*.*", "user/*.*", "offline_access"],
+  "response_types_supported": ["code", "code id_token", "id_token", "refresh_token"],
+  "introspection_endpoint": "<<YOUROKTA_API_AM_URL>>/v1/introspect"
+  "revocation_endpoint": "<<YOUROKTA_API_AM_URL>>/v1/revoke",
+  "capabilities": ["launch-ehr", "client-public", "client-confidential-symmetric", "context-ehr-patient", "sso-openid-connect"]
+}
