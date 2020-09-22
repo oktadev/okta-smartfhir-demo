@@ -1,0 +1,68 @@
+<html>
+  <head>
+    <link rel="stylesheet" href="{{ gateway_url }}/static/style.css">
+    <script src="https://use.fontawesome.com/421188abd5.js"></script>
+  </head>
+  <body>
+    <div id="consent_body">
+      <form method="POST" action="{{ gateway_url }}/patient_authorization">
+        <div id="consent_logo_header">
+          <div>
+            <!-- App logo here -->
+            <img src="https://www.iconfinder.com/data/icons/hawcons/32/699297-icon-68-document-file-app-512.png"></img>
+          </div>
+          <div class="arrow">
+            <!-- Arrows icon here -->
+            <i class="fa fa-arrows-h fa-4x" aria-hidden="true"></i>
+          </div>
+          <div>
+            <!-- Okta Icon here-->
+            <img src="https://www.okta.com/sites/default/files/Dev_Logo-02_Large.png"></img>
+          </div>
+        </div>
+        <div id="consent_app_names">
+            <h2>
+              Connect {{ app_name }} to Okta SMART FHIR Demo
+            </h2>
+            <h3>
+              Allow {{ app_name }} to access:
+            </h3>
+        </div>
+        <div id="consent_scopes">
+          {% for scope in scopes %}
+            {% if scope.consent == 'REQUIRED' %}
+              <div class="list_item">
+            {% else %}
+              <div class="list_item" style="display:none;">
+            {% endif %}   
+                <input type="checkbox" name="scopes" value="{{ scope.name }}" id="{{ scope.name }}" checked="true">
+                <label for="{{ scope.name }}">{{ scope.displayName }}</label>
+              </div>
+    
+          {% endfor %}
+        </div>
+
+        {% if show_patient_picker %}
+          <div id="consent_patient_header">
+            <h3>
+              Whose record do you want to allow access to?
+            </h3>
+          </div>
+          <div id="consent_patients">
+              {% for patient in patients %}
+                <div class="list_item">
+                  <input type="radio" id="{{ patient.patient_id }}" name="patient" value="{{ patient.patient_id }}">
+                  <label for="{{ patient.patient_id}}">{{ patient.patient_name }}</label>
+                </div>
+              {% endfor %}
+          </div>
+        {% endif %}
+
+        <button type="submit">
+          Approve
+        </button>
+    
+      </form>
+    </div>
+  </body>
+</html>

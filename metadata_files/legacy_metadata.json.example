@@ -57,6 +57,10 @@
               {
                 "url" : "revoke",
                 "valueUri" : "<<YOUROKTA_API_AM_URL>>/v1/revoke"
+              },
+			  {
+                "url" : "register",
+                "valueUri" : "<<YOUROKTA_API_AM_URL>>/v1/clients"
               }
             ],
             "url" : "http://fhir-registry.smarthealthit.org/StructureDefinition/oauth-uris"

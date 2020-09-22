@@ -1,20 +1,15 @@
-# Welcome to Serverless!
-#
-# This file is the main config file for your service.
-# It's very minimal at this point and uses default values.
-# You can always add more config options for more control.
-# We've included some commented out config examples here.
-# Just uncomment any of them to get that config option.
-#
-# For full config options, check the docs:
-#    docs.serverless.com
-#
-# Happy Coding!
+# This is a rough example of using Okta as the authorization server as part of a SMART/FHIR deployment.
+# It includes the following features:
+# - standalone launch with launch parameters
+# - a patient picker screen and OAuth2 scope selection and consent.
+# - applicable proxies for properly handling public client authentication as well as returning launch parameters in a flexible way.
+# - passthrough API endpoints for demo data, hosted by HAPI.org.
 
 service: okta-smartfhir-auth-demo
 plugins:
   - serverless-s3-sync
   - serverless-apigateway-service-proxy
+  
 provider:
   name: aws
   runtime: nodejs12.x
@@ -25,17 +20,83 @@ provider:
     restApi: true
     
   environment:
-    TOKEN_ENDPOINT: https://<<YOUROKTA_API_AM_URL>>/v1/token
-    OKTA_ORG: <<youroktaorg.okta.com>>
+#This variable will contain the live API URL (https://XXXXX.execute-api.us-east-1.amazonaws.com/dev)
+    GATEWAY_URL:
+      !Join
+        - ''
+        - - 'https://'
+          - !Ref ApiGatewayRestApi
+          - '.execute-api.'
+          - ${opt:region, self:provider.region}
+          - '.amazonaws.com/'
+          - ${opt:stage, self:provider.stage}
+          
+    AUTHZ_ISSUER: https://_YOUR_ORG_.oktapreview.com/oauth2/_YOUR_AUTHZ_SERVER_
+    AUTHZ_SERVER: _YOUR_AUTHZ_SERVER_
+    OKTA_ORG: _YOUR_ORG_.oktapreview.com
+    STATE_COOKIE_SIGNATURE_KEY: JustPutAReallyLongValueHere!
+    
+    #TODO: Get rid of.
+    API_KEY: _AN_API_KEY_
+    
+    PICKER_DISPLAY_NAME: Patient Picker
+    PICKER_CLIENT_ID: _CLIENT_ID_FOR_PATIENT_PICKER_
+    PICKER_CLIENT_SECRET: _CLIENT_SECRET_FOR_PATIENT_PICKER_
+    
+    #TODO: Get rid of.
+    APP_CLIENT_ID: _DEMO_APP_CLIENT_ID_
+    APP_CLIENT_SECRET: _DEMO_APP_CLIENT_SECRET_
     
 #Lambda function for our token proxy.
 functions:
+  smart-authorize-proxy:
+    handler: authorize.smartAuthorizeProxy
+    events:
+      - http:
+          path: /authorize
+          method: GET
+
   smart-token-proxy:
-    handler: handler.smartTokenProxy
+    handler: token.smartTokenProxy
     events:
       - http:
           path: /token
           method: POST
+          
+  patient_picker:
+    handler: patient_picker.patientPickerApp
+    events:
+      - http:
+          path: /oidc_callback
+          method: GET
+      - http:
+          path: /patient_authorization
+          method: GET
+      - http:
+          path: /patient_authorization
+          method: POST
+      - http:
+          path: /static/{proxy+}
+          method: GET
+  
+  token_hook:
+    handler: token_hook.tokenHook
+    events:
+      - http:
+          path: /tokenhook
+          method: POST
+ 
+  
+  mock_patient_service:
+    handler: mock_patient_service.mockPatientService
+    events:
+      - http:
+          path: /patientMockService
+          method: GET
+          
+#############          
+#HAPI Proxies
+#############
       - http:
           path: /Claim/{proxy+}
           method: ANY
@@ -56,8 +117,177 @@ functions:
             uri: http://hapi.fhir.org/baseR4/Patient/{proxy}
             parameters:
               paths:
-                proxy: true                
-       
+                proxy: true   
+
+      - http:
+          path: /ExplanationOfBenefit/{proxy+}
+          method: ANY
+          cors: true
+          integration: http-proxy
+          request:
+            uri: http://hapi.fhir.org/baseR4/ExplanationOfBenefit/{proxy}
+            parameters:
+              paths:
+                proxy: true           
+
+      - http:
+          path: /Coverage/{proxy+}
+          method: ANY
+          cors: true
+          integration: http-proxy
+          request:
+            uri: http://hapi.fhir.org/baseR4/Coverage/{proxy}
+            parameters:
+              paths:
+                proxy: true         
+
+      - http:
+          path: /AllergyIntolerance/{proxy+}
+          method: ANY
+          cors: true
+          integration: http-proxy
+          request:
+            uri: http://hapi.fhir.org/baseR4/AllergyIntolerance/{proxy}
+            parameters:
+              paths:
+                proxy: true       
+
+      - http:
+          path: /CarePlan/{proxy+}
+          method: ANY
+          cors: true
+          integration: http-proxy
+          request:
+            uri: http://hapi.fhir.org/baseR4/CarePlan/{proxy}
+            parameters:
+              paths:
+                proxy: true       
+
+      - http:
+          path: /CareTeam/{proxy+}
+          method: ANY
+          cors: true
+          integration: http-proxy
+          request:
+            uri: http://hapi.fhir.org/baseR4/CareTeam/{proxy}
+            parameters:
+              paths:
+                proxy: true    
+
+      - http:
+          path: /Condition/{proxy+}
+          method: ANY
+          cors: true
+          integration: http-proxy
+          request:
+            uri: http://hapi.fhir.org/baseR4/Condition/{proxy}
+            parameters:
+              paths:
+                proxy: true     
+
+      - http:
+          path: /DiagnosticReport/{proxy+}
+          method: ANY
+          cors: true
+          integration: http-proxy
+          request:
+            uri: http://hapi.fhir.org/baseR4/DiagnosticReport/{proxy}
+            parameters:
+              paths:
+                proxy: true      
+
+      - http:
+          path: /DocumentReference/{proxy+}
+          method: ANY
+          cors: true
+          integration: http-proxy
+          request:
+            uri: http://hapi.fhir.org/baseR4/DocumentReference/{proxy}
+            parameters:
+              paths:
+                proxy: true  
+
+      - http:
+          path: /Goal/{proxy+}
+          method: ANY
+          cors: true
+          integration: http-proxy
+          request:
+            uri: http://hapi.fhir.org/baseR4/Goal/{proxy}
+            parameters:
+              paths:
+                proxy: true     
+
+      - http:
+          path: /Immunization/{proxy+}
+          method: ANY
+          cors: true
+          integration: http-proxy
+          request:
+            uri: http://hapi.fhir.org/baseR4/Immunization/{proxy}
+            parameters:
+              paths:
+                proxy: true        
+
+      - http:
+          path: /MedicationRequest/{proxy+}
+          method: ANY
+          cors: true
+          integration: http-proxy
+          request:
+            uri: http://hapi.fhir.org/baseR4/MedicationRequest/{proxy}
+            parameters:
+              paths:
+                proxy: true      
+
+      - http:
+          path: /Observation/{proxy+}
+          method: ANY
+          cors: true
+          integration: http-proxy
+          request:
+            uri: http://hapi.fhir.org/baseR4/AllergyIntolerance/{proxy}
+            parameters:
+              paths:
+                proxy: true     
+
+      - http:
+          path: /Procedure/{proxy+}
+          method: ANY
+          cors: true
+          integration: http-proxy
+          request:
+            uri: http://hapi.fhir.org/baseR4/Procedure/{proxy}
+            parameters:
+              paths:
+                proxy: true     
+
+      - http:
+          path: /ServiceRequest/{proxy+}
+          method: ANY
+          cors: true
+          integration: http-proxy
+          request:
+            uri: http://hapi.fhir.org/baseR4/ServiceRequest/{proxy}
+            parameters:
+              paths:
+                proxy: true 
+
+      - http:
+          path: /Encounter/{proxy+}
+          method: ANY
+          cors: true
+          integration: http-proxy
+          request:
+            uri: http://hapi.fhir.org/baseR4/Encounter/{proxy}
+            parameters:
+              paths:
+                proxy: true       
+#################
+#END HAPI Proxies                
+#################
+
+#TODO - make the s3 stuff dynamic so it's easy to configure.                   
 custom:
 #Deploy the metadata static files to S3.
   s3Sync:
@@ -83,6 +313,15 @@ custom:
           Ref: MetadataBucket
         key: smart_configuration.json
         cors: true        
+        
+    - s3:
+        path: /.well-known/smart-configuration
+        method: get
+        action: GetObject
+        bucket:
+          Ref: MetadataBucket
+        key: smart_configuration.json
+        cors: true       
         
 # Define the S3 bucket that will hold the public metadata resources.
 resources:
