@@ -8,24 +8,32 @@ const njwt = require('njwt');
 
 app.use(bodyParser.json())
 
-//TODO: See if there's a way to eliminate this whole thing.
-
 //Step 5- the token hook will be called by Okta, and used to take the patient sent in, and put it within the access_token.
+//Additionally, this hook will be used to validate that the original authorization request did indeed use our picker.
 //The token proxy will then come along and pull it out and put it alongside the token too.
 app.post("/tokenhook", (request, response) => {
   var authorizeUrl = request.body.data.context.request.url.value;
   console.log('Token hook invoked with url: ' + authorizeUrl)
   
-  var regex = /request=([^&]+)/i;
-  var requestJWT = authorizeUrl.match(regex)[1];
+  var regex = /picker_context=([^&]+)/i;
+  var pickerContextJWT = authorizeUrl.match(regex)[1];
+  var verifiedPickerContextJWT = '';
   
-  //TODO: Use a private key instead of client secret.
-  var verifiedJWT = njwt.verify(requestJWT, process.env.APP_CLIENT_SECRET);
-  
+  try {
+	  verifiedPickerContextJWT = njwt.verify(pickerContextJWT, process.env.PICKER_CLIENT_SECRET);
+  }
+  catch(e) {
+	var tokenError = {
+		"error": {
+			errorSummary: "Invalid authorize request- the request is missing a valid picker context."
+		}
+	}
+	response.send(tokenError);
+  }
   console.log('Verified JWT detail:')
-  console.log(verifiedJWT)
+  console.log(verifiedPickerContextJWT)
   
-  console.log('Patient id: ' + verifiedJWT.body.patient)
+  console.log('Patient id: ' + verifiedPickerContextJWT.body.patient)
   
   var tokenUpdate = {
    "commands": [ 
@@ -35,7 +43,7 @@ app.post("/tokenhook", (request, response) => {
                  { 
                      "op": "add",
                      "path": "/claims/launch_response_patient",
-                     "value": verifiedJWT.body.patient
+                     "value": verifiedPickerContextJWT.body.patient
                   }
              ] 
          }    
@@ -43,6 +51,5 @@ app.post("/tokenhook", (request, response) => {
   };
   response.send(tokenUpdate);
 })
-
 
 module.exports.tokenHook = serverless(app)

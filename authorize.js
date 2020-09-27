@@ -8,7 +8,7 @@ const { v4: uuidv4 } = require('uuid')
 
 app.use(cookieParser(process.env.STATE_COOKIE_SIGNATURE_KEY));
 
-// Step 1 - Authorize request, cache off the app-level, and login to the person/consent picker page instead.
+// Step 1 - Authorize request, store the original request in a signed cookie, and login to the person/consent picker page instead.
 
 // For the consent/patient picker, we'll just use the openid,email,profile scopes.
 app.get('/authorize', (request, response) => {

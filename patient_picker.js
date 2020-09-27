@@ -54,7 +54,6 @@ app.get('/oidc_callback', (request, response) => {
     response.cookie('apiAccessToken', oktaResponse.data.access_token, {httpOnly: true, signed: true});
     
     console.log('Sending the user to the patient/consent picker.')
-	//TODO- fix this so I don't need to hardcode the /dev piece!
     response.redirect(process.env.GATEWAY_URL + '/patient_authorization')
   }, (error) => {
     console.log(error);
@@ -97,7 +96,8 @@ app.get('/patient_authorization', (request, response) => {
       response.status(500).send('Unable to retrieve requested scope definitions from the authorization server.')
     })
 
-  }, (error) => {
+  })
+  .catch((error) => {
     console.log(error);
 	response.status(500).send('Unable to retrieve the patient list from the patient access service.')
   });
@@ -106,6 +106,9 @@ app.get('/patient_authorization', (request, response) => {
 //Step 4 - A patient and scope(s) have been selected by the user.
 //We need to take the scope(s) requested, plus the patient_id selected, and we need to build a new authz request with it.
 //In order to provide some trust in the process, we'll use a signed JWT for the authorize request back to Okta for the real app.
+//The signed JWT will be validated in the token hook.  That will prevent someone from circumventing the picker by doing an 
+//authorize directly against Okta.
+
 app.post('/patient_authorization', (request, response) => {
   var accessToken = request.signedCookies.apiAccessToken;
   var origRequest = request.signedCookies.origRequest;
@@ -118,42 +121,37 @@ app.post('/patient_authorization', (request, response) => {
   console.log(request.body)
   
   //TODO: check the access token passed in from the user along with all of this. (accessToken variable)
-  //TODO: Don't use the app client secret here- instead lets use a private key.
-  //build new authz request from original request, token, and user selection
-  const clientSecret = process.env.APP_CLIENT_SECRET;
-  const clientId = process.env.APP_CLIENT_ID;
+  const pickerClientId = process.env.PICKER_CLIENT_ID
+  const pickerSecret = process.env.PICKER_CLIENT_SECRET
+  
   const now = Math.floor( new Date().getTime() / 1000 );
   const plus5Minutes = new Date( ( now + (5*60) ) * 1000);
   var scopes = ''
   
   if(request.body.scopes instanceof Array) {
-    scopes = request.body.scopes.join(' ')
+    scopes = request.body.scopes.join('%20') //join with a url encoded space.
   }
   else {
     scopes = request.body.scopes
   };
   
+  //Build the picker context- this is going to be used to provide the selected patient id, but also we just want
+  //something signed so Okta can validate it.
   const claims = {
-    aud: process.env.AUTHZ_ISSUER, // audience, which is the authz server.
-    scope: scopes,
-    state: origRequest.state,
-    response_type: 'code',
-    redirect_uri: origRequest.redirect_uri,
-    client_id: origRequest.client_id,
     patient: request.body.patient
   };
 
-  const jwt = njwt.create(claims, clientSecret)
+  const jwt = njwt.create(claims, pickerSecret)
     .setIssuedAt(now)
     .setExpiration(plus5Minutes)
-    .setIssuer(clientId)
-    .setSubject(clientId)
+    .setIssuer(pickerClientId)
+    .setSubject(pickerClientId)
     .compact();
   
-  console.log('JWT claims to be used to request final authorization:')
+  console.log('JWT claims to be used to specify picker context:')
   console.log(claims)
   
-  console.log('JWT to be used to request final authorization:')
+  console.log('JWT to be used to specify picker context:')
   console.log(jwt)
 
   console.log('Done with custom authz- clearing cookies...')
@@ -161,11 +159,20 @@ app.post('/patient_authorization', (request, response) => {
   response.cookie('apiAccessToken', '', {maxAge: 0});
   
   console.log('Redirecting user to authz endpoint.')
-  //redirect the user there.
-  response.redirect(process.env.AUTHZ_ISSUER + '/v1/authorize?request=' + jwt);
+  var newAuthUrl = process.env.AUTHZ_ISSUER + '/v1/authorize?' +
+		'client_id=' + origRequest.client_id +
+		'&redirect_uri=' + origRequest.redirect_uri +
+		'&state=' + origRequest.state +
+		'&response_type=code' +
+		'&scope=' + scopes +
+		'&picker_context=' + jwt
+		
+  //redirect the user to their original authorize URL with our picker modifications.
+  response.redirect(newAuthUrl);
 })
 
 //TODO- use OAuth2 token from the user instead of using an API key here.
+//This is used by the patient picker to pull a list of SMART/FHIR scope definitions from Okta.
 function get_scope_data(clientRequestedScopes) {
   const scopeEndpoint = 'https://' + process.env.OKTA_ORG + '/api/v1/authorizationServers/' + process.env.AUTHZ_SERVER + '/scopes'
   console.log('Retrieving Scope data from Okta.')
