@@ -13,8 +13,7 @@ app.use(cookieParser(process.env.STATE_COOKIE_SIGNATURE_KEY));
 // For the consent/patient picker, we'll just use the openid,email,profile scopes.
 app.get('/authorize', (request, response) => {
   
-  //Cache:
-  //Client_id, state, scopes, redirect_uri
+  //Cache Client_id, state, scopes, redirect_uri into a signed cookie
   var inboundRequest = {
     client_id: request.query.client_id,
     state: request.query.state,
@@ -29,7 +28,7 @@ app.get('/authorize', (request, response) => {
   
   var pickerAuthzState = uuidv4();
   
-  //For the picker app to properly validate state we need to share the requested state with it.
+  //For the picker app to properly validate the OAuth2 state we need to cache that off in a signed cookie as well.
   response.cookie('pickerAuthzState', pickerAuthzState, {httpOnly: true, signed: true})
   
   //Build person picker authz request
