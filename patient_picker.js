@@ -1,4 +1,6 @@
 'use strict';
+//This is an example of a custom scope consent and patient picker to be used as part of an Okta authentication
+//and authorization flow.
 
 const serverless = require('serverless-http')
 const express = require('express')
@@ -18,7 +20,8 @@ nunjucks.configure('views', {
 });
 
 
-//Step 2- Log the user into Okta and the patient picker, and send their access token down. With it they can call an API to get the patients they have access to.
+//Step 2- Log the user into Okta and the patient picker, and send their access token down. 
+//With it they can post back here with their consent decisions.
 app.get('/oidc_callback', (request, response) => {
   var authCode = request.query.code;
   var formData = 'client_id=' +
@@ -46,8 +49,7 @@ app.get('/oidc_callback', (request, response) => {
     url: process.env.AUTHZ_ISSUER + '/v1/token',
     method: 'post',
     headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-    data: formData,
-    
+    data: formData
   })
   .then((oktaResponse) => {
     console.log('Token endpoint call successful. Access token: ' + oktaResponse.data.access_token);
@@ -69,43 +71,53 @@ app.get('/patient_authorization', (request, response) => {
   
   console.log('User reached patient/consent picker app- calling patient access service with access token: ' + accessToken);
   
-  //TODO - we can skip this if the launch/patient scope is missing.
-  axios.request({
-    url: process.env.GATEWAY_URL + '/patientMockService',
-    method: "get",
-    headers: {Authorization: 'Bearer ' + accessToken},    
-  })
-  .then((mockResponse) => {
-    console.log('Data from the Mock Patient access API Response')
-    console.log(mockResponse.data);
-    
-    console.log('Original scopes requested by the app: ' + origRequest.scope)
-    
-    get_scope_data(origRequest.scope)
-    .then((scopeDefinitions) => {
-		//Now that we have our scopes let's render the page.
-		response.render('patient_authorization.html', { 
-			patients: mockResponse.data, 
-			scopes: scopeDefinitions, 
-			show_patient_picker: (origRequest.scope.includes('launch/patient')),
-			app_name: process.env.PICKER_DISPLAY_NAME,
-			gateway_url: process.env.GATEWAY_URL 
+  introspect_token(accessToken)
+  .then((introspectResult) => {
+	if(introspectResult) {
+		//TODO - we can skip this extra rest call if the launch/patient scope is missing.
+		axios.request({
+			url: process.env.GATEWAY_URL + '/patientMockService',
+			method: "get",
+			headers: {Authorization: 'Bearer ' + accessToken},    
 		})
-    })
-    .catch((err) => {
-      response.status(500).send('Unable to retrieve requested scope definitions from the authorization server.')
-    })
-
+		.then((mockResponse) => {
+			console.log('Data from the Mock Patient access API Response')
+			console.log(mockResponse.data);
+    
+			console.log('Original scopes requested by the app: ' + origRequest.scope)
+    
+			get_scope_data(origRequest.scope)
+			.then((scopeDefinitions) => {
+				//Now that we have our scopes let's render the page.
+				response.render('patient_authorization.html', { 
+					patients: mockResponse.data, 
+					scopes: scopeDefinitions, 
+					show_patient_picker: (origRequest.scope.includes('launch/patient')),
+					app_name: process.env.PICKER_DISPLAY_NAME,
+					gateway_url: process.env.GATEWAY_URL 
+				})
+			})
+			.catch((err) => {
+			  response.status(500).send('Unable to retrieve requested scope definitions from the authorization server.')
+			})
+		})
+		.catch((error) => {
+			console.log(error);
+			response.status(500).send('Unable to retrieve the patient list from the patient access service.')
+		});
+	}
+	else {
+		response.status(403).send('A valid access token was not provided.')  
+	}
   })
   .catch((error) => {
-    console.log(error);
-	response.status(500).send('Unable to retrieve the patient list from the patient access service.')
-  });
+	  response.status(403).send('A valid access token was not provided.')
+  })
 })
 
 //Step 4 - A patient and scope(s) have been selected by the user.
 //We need to take the scope(s) requested, plus the patient_id selected, and we need to build a new authz request with it.
-//In order to provide some trust in the process, we'll use a signed JWT for the authorize request back to Okta for the real app.
+//In order to provide some trust in the process, we'll use a signed JWT as part of the authorize request back to Okta for the real app.
 //The signed JWT will be validated in the token hook.  That will prevent someone from circumventing the picker by doing an 
 //authorize directly against Okta.
 
@@ -167,11 +179,22 @@ app.post('/patient_authorization', (request, response) => {
 		'&scope=' + scopes +
 		'&picker_context=' + jwt
 		
-  //redirect the user to their original authorize URL with our picker modifications.
-  response.redirect(newAuthUrl);
+  //If they also provided a valid access token along with their selection, we'll pass them forward to the next step.
+  introspect_token(accessToken)
+  .then((result) => {
+	  if(result) {
+		response.redirect(newAuthUrl);  
+	  }
+	  else {
+		response.status(403).send('A valid access token is required.')  
+	  }
+  })
+  .catch((error) => {
+	response.status(403).send('A valid access token is required.')
+  })
+  
 })
 
-//TODO- use OAuth2 token from the user instead of using an API key here.
 //This is used by the patient picker to pull a list of SMART/FHIR scope definitions from Okta.
 function get_scope_data(clientRequestedScopes) {
   const scopeEndpoint = 'https://' + process.env.OKTA_ORG + '/api/v1/authorizationServers/' + process.env.AUTHZ_SERVER + '/scopes'
@@ -207,5 +230,36 @@ function get_scope_data(clientRequestedScopes) {
   return promise
 }
 
+//This method is used to ensure that the user did indeed login with Okta prior to making a patient/scope selection.
+function introspect_token(token) {
+	const introspectEndpoint = process.env.AUTHZ_ISSUER + '/v1/introspect';
+	console.log('Introspecting the patient picker access token.')
+	
+	var formData = 'client_id=' +
+                 process.env.PICKER_CLIENT_ID +
+                 '&client_secret=' +
+                 process.env.PICKER_CLIENT_SECRET +
+                 '&token_type_hint=access_token&token=' +
+                 token;
+				 
+	let promise = new Promise(function(resolve, reject) {
+		axios.request({
+			url: process.env.AUTHZ_ISSUER + '/v1/introspect',
+			method: 'post',
+			headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+			data: formData
+		})
+		.then((oktaResponse) => {
+			console.log('Introspect call successful. Result:')
+			console.log(oktaResponse.data)
+			resolve(oktaResponse.data.active)
+		})
+		.catch((error) => {
+			console.log(error);
+			reject(error)
+		});
+	})
+	return promise
+}
 
 module.exports.patientPickerApp = serverless(app)
