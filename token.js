@@ -12,59 +12,48 @@ app.use(bodyParser.urlencoded({ extended: false }))
 //Step 6- Token Proxy will take out the patient_id value in the token, and return it alongside the token instead.
 //This is also where we handle public applications that need tokens.
 app.post("/token", (request,response) => {
-  const tokenEndpoint = process.env.AUTHZ_ISSUER + '/v1/token';
+	const tokenEndpoint = process.env.AUTHZ_ISSUER + '/v1/token';
 
-  console.log('Token proxy called.')
-  console.log('Calling real /token endpoint at Okta.')
-  
-  //3 valid scenarios I need to implement:
-  //1- Public client, access code request
-  //2- Confidential client, access code request
-  //3- Confidential client, refresh token request
-  //4- **FUTURE** public client w/ PKCE refresh token request
-  
-  //TODO - this formData assumes a public client, so we're building a JWT for client authentication.
-  //Need to implement the other 2 scenarios.
-  var formData = 'client_assertion=' +
-                 get_private_key_jwt(request.body.client_id,tokenEndpoint) +
-                 '&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer' +
-                 '&grant_type=authorization_code&redirect_uri=' +
-                 request.body.redirect_uri +
-                 '&code=' +
-                 request.body.code;
-  
-  console.log("Body to send to Okta:")
-  console.log(formData)
-  
-  axios.request({
-		'url': tokenEndpoint,
-		'method': 'post',
-		'headers': {'Content-Type': 'application/x-www-form-urlencoded'},
-		'data': formData
-	})
-  .then((oktaResponse) => {
-    console.log('Response from Okta:')
-    console.log(oktaResponse.data)
+	console.log('Token proxy called.')
+	console.log('Calling real /token endpoint at Okta.')
 
-    get_return_claims(get_access_token_payload(oktaResponse.data.access_token), oktaResponse.data)
-    console.log('Final /token response:')
-    console.log(oktaResponse.data)
-    response.set('Cache-Control','no-store')
-    response.set('Pragma','no-cache')
-    response.send(oktaResponse.data)
+	//Get the proper Okta /token request based upon the situation.
+	var formData = get_okta_token_request(request, tokenEndpoint)
 
-  })
-  .catch((error) => {
-    console.log(error);
-    response.status(400).send(error)
-  });
-  
+	console.log("Body to send to Okta:")
+	console.log(formData)
+	if(formData) {
+		axios.request({
+			'url': tokenEndpoint,
+			'method': 'post',
+			'headers': {'Content-Type': 'application/x-www-form-urlencoded'},
+			'data': formData
+		})
+		.then((oktaResponse) => {
+			console.log('Response from Okta:')
+			console.log(oktaResponse.data)
+
+			get_return_claims(get_access_token_payload(oktaResponse.data.access_token), oktaResponse.data)
+			console.log('Final /token response:')
+			console.log(oktaResponse.data)
+			response.set('Cache-Control','no-store')
+			response.set('Pragma','no-cache')
+			response.send(oktaResponse.data)
+		})
+		.catch((error) => {
+			console.log(error);
+			response.status(400).send(error)
+		});
+	}
+	else {
+		response.status(400).send('An invalid token request was made. This authorization server does not support public client refresh tokens without PKCE.')
+	}
 })
 
 //Helper functions for the token proxy
 function get_access_token_payload(jwt) {
 	var base64Payload = jwt.split('.')[1];
-	var buff = new Buffer(base64Payload, 'base64');
+	var buff = Buffer.from(base64Payload, 'base64');
 	var payloadText = buff.toString('utf-8');
 	var payloadObj = JSON.parse(payloadText)
 	console.log("Parsed Access Token:")
@@ -109,6 +98,73 @@ function get_private_key_jwt(client_id, token_endpoint) {
 	console.log ('Generated JWT used for client authentication for a public app:')
 	console.log(jwt)
 	return jwt
+}
+
+function get_okta_token_request(app_request, tokenEndpoint) {
+  //3 valid scenarios:
+  //1- Public client, access code request
+  //2- Confidential client, access code request
+  //3- Confidential client, refresh token request
+  //4- **FUTURE** public client w/ PKCE refresh token request
+	var clientId = ''
+	var clientSecret = ''
+	var confidentialClient = false
+	
+	//Handle the multiple ways the client id/secret can come in.
+	if(app_request.get('Authorization')){
+		var regex = /\s*basic\s*(.+)/i;
+		var credentials = app_request.get('Authorization').match(regex)[1];
+		var buff = Buffer.from(credentials, 'base64')
+		var authString = buff.toString('utf-8')
+		clientId = authString.split(':')[0]
+		clientSecret = authString.split(':')[1]
+		confidentialClient = true
+	}
+	if(app_request.body.client_secret) {
+		clientSecret = app_request.body.client_secret
+		confidentialClient = true
+	}
+	if(app_request.body.client_id) {
+		clientId = app_request.body.client_id
+	}
+	
+	//Scenario 1 - public client, initial authz.
+	if(app_request.body.grant_type == 'authorization_code' && !confidentialClient) {
+		return 'client_assertion=' +
+			get_private_key_jwt(clientId, tokenEndpoint) +
+			'&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer' +
+			'&grant_type=authorization_code&redirect_uri=' +
+			app_request.body.redirect_uri +
+			'&code=' +
+			app_request.body.code;
+	}
+	//Scenario 2 - confidential client, initial authz.
+	else if(app_request.body.grant_type == 'authorization_code' && confidentialClient) {
+		return 'client_id=' +
+			clientId +
+			'&client_secret=' +
+			clientSecret +
+			'&grant_type=authorization_code&redirect_uri=' +
+			app_request.body.redirect_uri +
+			'&code=' +
+			app_request.body.code;
+	}
+	//Scenario 3 - confidential client, refresh token.
+	else if(app_request.body.grant_type == 'refresh_token' && confidentialClient) {
+		var formData = 'client_id=' +
+			clientId +
+			'&client_secret=' +
+			clientSecret +
+			'&grant_type=refresh_token&refresh_token=' +
+			app_request.body.refresh_token
+		if(app_request.body.scope) {
+			formData += '&scope=' + app_request.body.scope
+		}
+		return formData
+	}
+	else {
+		return false
+	}  
 }
 
 module.exports.smartTokenProxy = serverless(app)
