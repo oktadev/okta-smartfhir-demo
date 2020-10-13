@@ -7,7 +7,6 @@
 
 service: okta-smartfhir-auth-demo
 plugins:
-  - serverless-s3-sync
   - serverless-apigateway-service-proxy
   
 provider:
@@ -31,27 +30,57 @@ provider:
           - '.amazonaws.com/'
           - ${opt:stage, self:provider.stage}
           
-    AUTHZ_ISSUER: https://_YOUR_ORG_.oktapreview.com/oauth2/_YOUR_AUTHZ_SERVER_
-    AUTHZ_SERVER: _YOUR_AUTHZ_SERVER_
-    OKTA_ORG: _YOUR_ORG_.oktapreview.com
+    AUTHZ_ISSUER: _OKTA_AUTHZ_SERVER_ISSUER_
+    AUTHZ_SERVER: _OKTA_AUTHZ_SERVER_ID_
+    OKTA_ORG: _YOUROKTAORG_.oktapreview.com
     STATE_COOKIE_SIGNATURE_KEY: JustPutAReallyLongValueHere!
     
-    #TODO: Get rid of.
-    API_KEY: _AN_API_KEY_
+    
+    API_KEY: _READONLY_API_KEY_
     
     PICKER_DISPLAY_NAME: Patient Picker
-    PICKER_CLIENT_ID: _CLIENT_ID_FOR_PATIENT_PICKER_
-    PICKER_CLIENT_SECRET: _CLIENT_SECRET_FOR_PATIENT_PICKER_
+    PICKER_CLIENT_ID: _OKTA_PICKER_CLIENT_ID_
+    PICKER_CLIENT_SECRET: _OKTA_PICKER_CLIENT_SECRET_
     
-#Lambda function for our token proxy.
+#Lambda functions
 functions:
+
+##METADATA ENDPOINTS
+  metadata-endpoints:
+    handler: metadata_endpoints.metadataEndpoints
+    events:
+      - http:
+          path: /smart-configuration
+          method: GET
+      - http:
+          path: /.well-known/smart-configuration
+          method: GET
+      - http:
+          path: /metadata
+          method: GET
+     
+  keys_endpoint:
+    handler: keys.keysEndpoint
+    events:
+      - http:
+          path: /keys
+          method: GET     
+          
+##AUTHORIZE ENDPOINTS
   smart-authorize-proxy:
     handler: authorize.smartAuthorizeProxy
     events:
       - http:
           path: /authorize
           method: GET
+      - http:
+          path: /picker_oidc_callback
+          method: GET
+      - http:
+          path: /smart_proxy_callback
+          method: GET          
 
+##TOKEN ENDPOINT
   smart-token-proxy:
     handler: token.smartTokenProxy
     events:
@@ -59,12 +88,11 @@ functions:
           path: /token
           method: POST
           
+##PATIENT PICKER UI          
   patient_picker:
     handler: patient_picker.patientPickerApp
     events:
-      - http:
-          path: /oidc_callback
-          method: GET
+
       - http:
           path: /patient_authorization
           method: GET
@@ -74,7 +102,7 @@ functions:
       - http:
           path: /static/{proxy+}
           method: GET
-  
+##TOKEN HOOK  
   token_hook:
     handler: token_hook.tokenHook
     events:
@@ -82,7 +110,7 @@ functions:
           path: /tokenhook
           method: POST
  
-  
+ ##MOCK PATIENT API 
   mock_patient_service:
     handler: mock_patient_service.mockPatientService
     events:
@@ -90,12 +118,7 @@ functions:
           path: /patientMockService
           method: GET
 
-  keys_endpoint:
-    handler: keys.keysEndpoint
-    events:
-      - http:
-          path: /keys
-          method: GET
+
           
 #############          
 #HAPI Proxies
@@ -113,47 +136,3 @@ functions:
 #################
 #END HAPI Proxies                
 #################
-
-#TODO - make the s3 stuff dynamic so it's easy to configure.                   
-custom:
-#Deploy the metadata static files to S3.
-  s3Sync:
-    - bucketName: okta-smartfhir-auth-demo-metadata
-      localDir: metadata_files
-      
-#Deploy the API gateway endpoints to host the metadata files.
-  apiGatewayServiceProxies:
-    - s3:
-        path: /metadata
-        method: get
-        action: GetObject
-        bucket:
-          Ref: MetadataBucket
-        key: legacy_metadata.json
-        cors: true
-
-    - s3:
-        path: /smart-configuration
-        method: get
-        action: GetObject
-        bucket:
-          Ref: MetadataBucket
-        key: smart_configuration.json
-        cors: true        
-        
-    - s3:
-        path: /.well-known/smart-configuration
-        method: get
-        action: GetObject
-        bucket:
-          Ref: MetadataBucket
-        key: smart_configuration.json
-        cors: true       
-        
-# Define the S3 bucket that will hold the public metadata resources.
-resources:
-  Resources:
-    MetadataBucket:
-      Type: AWS::S3::Bucket
-      Properties:
-        BucketName: okta-smartfhir-auth-demo-metadata

@@ -134,7 +134,7 @@ function get_okta_token_request(app_request, tokenEndpoint) {
 			get_private_key_jwt(clientId, tokenEndpoint) +
 			'&client_assertion_type=urn:ietf:params:oauth:client-assertion-type:jwt-bearer' +
 			'&grant_type=authorization_code&redirect_uri=' +
-			app_request.body.redirect_uri +
+			process.env.GATEWAY_URL + '/smart_proxy_callback' +
 			'&code=' +
 			app_request.body.code;
 	}
@@ -145,7 +145,7 @@ function get_okta_token_request(app_request, tokenEndpoint) {
 			'&client_secret=' +
 			clientSecret +
 			'&grant_type=authorization_code&redirect_uri=' +
-			app_request.body.redirect_uri +
+			process.env.GATEWAY_URL + '/smart_proxy_callback' +
 			'&code=' +
 			app_request.body.code;
 	}
