@@ -77,18 +77,3 @@ To deploy this example, run the following command:
 ```
 serverless deploy -v
 ```
-In response, you'll be provided with endpoint urls that we'll need to shove into our static metadata urls.
-***Note- the metadata files are currently static, but should be dynamic, and should use the rest of the configuration here.  PRs are welcome for that!***
-
-### Step 8- Update the metadata files with your deployment info
-Example metadata files are given in the /metadata folder. Rename them, and update as appropriate!
-```
-cd metadata_files
-mv smart_configuration.json.example smart_configuration.json
-mv legacy_metadata.json.example legacy_metadata.json
-```
-
-### Step 9- Deploy again with updated metadata
-```
-serverless deploy -v
-```
