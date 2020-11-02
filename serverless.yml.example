@@ -6,8 +6,6 @@
 # - passthrough API endpoints for demo data, hosted by HAPI.org.
 
 service: okta-smartfhir-auth-demo
-plugins:
-  - serverless-apigateway-service-proxy
   
 provider:
   name: aws
@@ -52,20 +50,24 @@ functions:
       - http:
           path: /smart-configuration
           method: GET
+		  cors: true
       - http:
           path: /.well-known/smart-configuration
           method: GET
+		  cors: true
       - http:
           path: /metadata
           method: GET
+		  cors: true
      
   keys_endpoint:
     handler: keys.keysEndpoint
     events:
       - http:
           path: /keys
-          method: GET     
-          
+          method: GET
+          cors: true
+
 ##AUTHORIZE ENDPOINTS
   smart-authorize-proxy:
     handler: authorize.smartAuthorizeProxy
@@ -87,6 +89,7 @@ functions:
       - http:
           path: /token
           method: POST
+		  cors: true
           
 ##PATIENT PICKER UI          
   patient_picker:
