@@ -6,8 +6,10 @@ const axios = require('axios');
 const bodyParser = require('body-parser')
 const njwt = require('njwt')
 const fs = require('fs');
+var cors = require('cors')
 
 app.use(bodyParser.urlencoded({ extended: false }))
+app.use(cors())
 
 //Step 6- Token Proxy will take out the patient_id value in the token, and return it alongside the token instead.
 //This is also where we handle public applications that need tokens.
