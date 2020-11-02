@@ -26,47 +26,60 @@ app.get('/patient_authorization', (request, response) => {
   
 	console.log('User reached patient/consent picker app- calling patient access service with access token: ' + accessToken);
   
+	//First validate our Okta login before we even show the consent screen.
 	introspect_token(accessToken)
 	.then((introspectResult) => {
 		if(introspectResult) {
-			get_scope_data(origRequest.scope) //Get scope definition data from Okta.
-			.then((scopeDefinitions) => {
-				if(origRequest.scope.includes('launch/patient')) { //If launch/patient is included, we also need to grab patient records.
-					axios.request({
-						url: process.env.GATEWAY_URL + '/patientMockService',
-						method: "get",
-						headers: {Authorization: 'Bearer ' + accessToken},    
-					})
-					.then((mockResponse) => {
-						console.log('Data from the Mock Patient access API Response')
-						console.log(mockResponse.data);
-		   
+			//Get the application data (icon, app_name) for the client_id passesd in.
+			get_application_data(origRequest.client_id)
+			.then((appInfo) => {
+				//Get scope definition data from Okta.
+				get_scope_data(origRequest.scope) 
+				.then((scopeDefinitions) => {
+					//If launch/patient+patient_selection is included, we also need to grab patient records.
+					if(origRequest.scope.includes('launch/patient') && origRequest.scope.includes('patient_selection')) {
+						axios.request({
+							url: process.env.GATEWAY_URL + '/patientMockService',
+							method: "get",
+							headers: {Authorization: 'Bearer ' + accessToken},    
+						})
+						.then((mockResponse) => {
+							console.log('Data from the Mock Patient access API Response')
+							console.log(mockResponse.data);
+			   
+							response.render('patient_authorization.html', { 
+								patients: mockResponse.data, 
+								scopes: scopeDefinitions, 
+								show_patient_picker: true,
+								app_name: appInfo.applicationName,
+								app_icon: appInfo.applicationLogo,
+								gateway_url: process.env.GATEWAY_URL 
+							})
+						})
+						.catch((error) => {
+							console.log(error);
+							response.status(500).send('Unable to retrieve the patient list from the patient access service.')
+						})
+					}
+					else { //No patient requested - just render the page.
 						response.render('patient_authorization.html', { 
-							patients: mockResponse.data, 
+							patients: undefined, 
 							scopes: scopeDefinitions, 
-							show_patient_picker: (origRequest.scope.includes('launch/patient')),
-							app_name: process.env.PICKER_DISPLAY_NAME,
+							show_patient_picker: false,
+							app_name: appInfo.applicationName,
+							app_icon: appInfo.applicationLogo,
 							gateway_url: process.env.GATEWAY_URL 
 						})
-					})
-					.catch((error) => {
-						console.log(error);
-						response.status(500).send('Unable to retrieve the patient list from the patient access service.')
-					})
-				}
-				else { //No patient requested - just render the page.
-					response.render('patient_authorization.html', { 
-						patients: undefined, 
-						scopes: scopeDefinitions, 
-						show_patient_picker: (origRequest.scope.includes('launch/patient')),
-						app_name: process.env.PICKER_DISPLAY_NAME,
-						gateway_url: process.env.GATEWAY_URL 
-					})
-				}
+					}
+				})
+				.catch((err) => {
+				  response.status(500).send('Unable to retrieve requested scope definitions from the authorization server.')
+				})
 			})
-			.catch((err) => {
-			  response.status(500).send('Unable to retrieve requested scope definitions from the authorization server.')
+			.catch((error) => {
+				response.status(500).send('Unable to retrieve application information from the authorization server.')
 			})
+
 		}
 		else {
 			//Introspect ran successfully, but Okta said the token is invalid.
@@ -114,10 +127,12 @@ app.post('/patient_authorization', (request, response) => {
 				scopes = request.body.scopes
 			};
 
-			//Build the picker context- this is going to be used to provide the selected patient id, but also we just want
-			//something signed so Okta can validate it in the hook.
+			//Build the picker context- this is going to be used to provide the consent information in a secure way to Okta.
+			//Note that request.body.patient may be null if the user isn't using the patient picker.
 			const claims = {
-				patient: request.body.patient
+				client_id: origRequest.client_id,
+				patient: request.body.patient,
+				scopes: scopes
 			}
 
 			const jwt = njwt.create(claims, pickerSecret)
@@ -160,6 +175,42 @@ app.post('/patient_authorization', (request, response) => {
 		response.status(403).send('A valid access token is required.')
 	})
 })
+
+//This is used by the patient picker to pull application information.
+function get_application_data(client_id) {
+	const appEndpoint = 'https://' + process.env.OKTA_ORG + '/api/v1/apps/' + client_id
+	console.log('Retrieving Application data from Okta.')
+
+	let promise = new Promise(function(resolve, reject) {
+		axios.request({
+			'url': appEndpoint,
+			'method': 'get',
+			'headers': {'Authorization': 'SSWS ' + process.env.API_KEY},
+		  })
+		.then((oktaResponse) => {
+			console.log('Response from Okta:')
+			console.log(oktaResponse.data)
+			var appName = oktaResponse.data.label
+			var appIcon = null
+			if (oktaResponse.data._links.logo) {
+				appIcon = oktaResponse.data._links.logo[0].href
+			}
+			var returnValue = {
+				applicationName: appName,
+				applicationLogo: appIcon
+			}
+			
+			console.log('Application information for the consent screen:')
+			console.log(returnValue)
+			resolve(returnValue)
+		})
+		.catch((error) => {
+			console.log(error);
+			reject(error)
+		})
+	})
+	return promise
+}
 
 //This is used by the patient picker to pull a list of SMART/FHIR scope definitions from Okta.
 function get_scope_data(clientRequestedScopes) {
