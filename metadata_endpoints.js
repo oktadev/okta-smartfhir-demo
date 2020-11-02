@@ -22,7 +22,7 @@ function getSMARTMetadata() {
 		"authorization_endpoint": process.env.GATEWAY_URL + '/authorize',
 		"token_endpoint": process.env.GATEWAY_URL + '/token',
 		"token_endpoint_auth_methods_supported": ["client_secret_basic"],
-		"registration_endpoint": process.env.OKTA_ORG + '/oauth2/v1/clients',
+		"registration_endpoint": 'https://' + process.env.OKTA_ORG + '/oauth2/v1/clients',
 		"scopes_supported": ["openid", "profile", "launch", "launch/patient", "patient/*.*", "user/*.*", "offline_access"],
 		"response_types_supported": ["code", "code id_token", "id_token", "refresh_token"],
 		"introspection_endpoint": process.env.AUTHZ_ISSUER + '/v1/introspect',
@@ -88,7 +88,7 @@ function getLegacyMetadata() {
 				  },
 				  {
 					"url" : "register",
-					"valueUri" : process.env.OKTA_ORG + '/oauth2/v1/clients'
+					"valueUri" : 'https://' + process.env.OKTA_ORG + '/oauth2/v1/clients'
 				  }
 				],
 				"url" : "http://fhir-registry.smarthealthit.org/StructureDefinition/oauth-uris"
