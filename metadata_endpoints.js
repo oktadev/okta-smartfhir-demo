@@ -1,7 +1,9 @@
 'use strict';
 const serverless = require('serverless-http')
 const express = require('express')
+var cors = require('cors')
 const app = express()
+app.use(cors())
 
 app.get("/.well-known/smart-configuration", (request,response) => {
 	response.send(getSMARTMetadata())
@@ -33,15 +35,9 @@ function getLegacyMetadata() {
 	var d = new Date();
 	return {
 		"resourceType" : "CapabilityStatement",
-		"id" : "smart-app-launch-example",
-		"text" : {
-			"status" : "generated",
-			"div" : ""
-		},
-		"url" : "http://fhir-registry.smarthealthit.org/CapabilityStatement/smart-app-launch-example",
-		"version" : "1.0.0",
+		"id" : "okta_smart-app-launch-example",
 		"name" : "SMART App Launch Capability Statement Example w/Okta as OAuth2 AS",
-		"status" : "draft",
+		"status" : "active",
 		"experimental" : true,
 		"date" : d.toISOString(),
 		"publisher" : "Okta",
@@ -50,18 +46,17 @@ function getLegacyMetadata() {
 		  "telecom" : [
 			{
 			  "system" : "url",
-			  "value" : "http://hl7.org/fhir"
+			  "value" : "https://okta.com"
 			}
 		  ]
 		}
 		],
-		"description" : "",
+		"description" : "This is an example implementation of the SMART launch framework using Okta as the identity and authorization platform.",
 		"kind" : "capability",
 		"software" : {
-		"name" : "Okta SMART FHIR Demo"
+			"name" : "Okta SMART FHIR Demo"
 		},
-		"fhirVersion" : "3.0.1",
-		"acceptUnknown" : "no",
+		"fhirVersion" : "4.0.1",
 		"format" : [
 			"xml",
 			"json"
@@ -69,7 +64,7 @@ function getLegacyMetadata() {
 		"rest" : [
 		{
 		  "mode" : "server",
-		  "documentation" : "An empty Capability Statement",
+		  "documentation" : "This is an example implementation of the SMART launch framework using Okta as the identity and authorization platform.",
 		  "security" : {
 			"extension" : [
 			  {
