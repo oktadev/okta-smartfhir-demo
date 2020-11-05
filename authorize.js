@@ -131,11 +131,16 @@ app.get('/smart_proxy_callback', (request, response) => {
 
 
 //This is used to validate to ensure that the redirect_uri sent in by the user is actually valid for the app.
+//The DISABLE_REDIRECT_URI_VALIDATION can be specified in serverless.yml and set to "true" to disable this check- FOR DEMO PURPOSES ONLY!  
+//This check is a key defense against vulnerabilities.
 function validateRedirectURL(client_id, redirect_uri) {
 	const clientEndpoint = 'https://' + process.env.OKTA_ORG + '/oauth2/v1/clients/' + client_id
 	console.log('Retrieving client information from Okta.')
 
 	let promise = new Promise(function(resolve, reject) {
+		if(process.env.DISABLE_REDIRECT_URI_VALIDATION) {
+			resolve(true)
+		}
 		axios.request({
 			'url': clientEndpoint,
 			'method': 'get',
