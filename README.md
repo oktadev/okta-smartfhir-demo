@@ -23,10 +23,10 @@ This repository includes the following endpoints:
 
 # Tested with clients
 These clients were used while developing this solution to ensure that the requirements of the SMART launch framework are correctly implemented:
-* [Inferno Test Suite](https://inferno.healthit.gov/community)
-* [SMART/FHIR iOS Demo](https://github.com/dancinnamon-okta/SoF-Demo)
-* [Demo Patient Portal](https://github.com/udplabs/zartan)
-* [Cerner SMART App Validator](https://smart.sandboxcerner.com/smart-app-validator-2.0/launch.html)
+* [Inferno Test Suite](https://inferno.healthit.gov/community) - Public or confidential app
+* [SMART/FHIR iOS Demo](https://github.com/dancinnamon-okta/SoF-Demo) - Public app
+* [Demo Patient Portal](https://github.com/udplabs/zartan) - Confidential app
+* [Cerner SMART App Validator](https://smart.sandboxcerner.com/smart-app-validator-2.0/launch.html) - Public app
 
 
 # How to use
