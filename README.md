@@ -18,10 +18,24 @@ This repository includes the following endpoints:
 - **FHIR API Demo:** To show how the process works with sample data, this project also has a number of proxies that forward FHIR requests to http://hapi.fhir.org for sample data.
 - **Keys Endpoint:** When a public SMART app requests a token from the Token Proxy, no client authentication is required- however Okta requires client authentication for authorization code token requests, per the OAuth2 specification. To accommodate for this, the Token endpoint uses a single private key, and performs [private_key_jwt](https://developer.okta.com/docs/reference/api/oidc/#jwt-with-private-key) authentication against Okta.  This endpoint exposes the **public** side of the key, and is to be configured as a valid JWK for the client application in Okta. See [Creating an app with JWKS](https://developer.okta.com/docs/reference/api/oauth-clients/#request-example-create-a-service-app-with-a-jwks) for a similar example.
 
+# High Level Architecture
+![Simplified Architecture](https://github.com/dancinnamon-okta/okta-smartfhir-demo/blob/master/doc/simple_architecture.png)
+
+# Tested with clients
+These clients were used while developing this solution to ensure that the requirements of the SMART launch framework are correctly implemented:
+* [Inferno Test Suite](https://inferno.healthit.gov/community)
+* [SMART/FHIR iOS Demo](https://github.com/dancinnamon-okta/SoF-Demo)
+* [Demo Patient Portal](https://github.com/udplabs/zartan)
+* [Cerner SMART App Validator](https://smart.sandboxcerner.com/smart-app-validator-2.0/launch.html)
+
+
 # How to use
 Follow these steps to set this up in your own environment!
 ## Prerequisites
 This example was designed and built for the AWS cloud- so you'll need an AWS account to run this example. The serverless framework used in this example supports other clouds as well, so updating for Azure or GCP should be relatively straightforward.
+
+You'll of course need an Okta tenant to run as intended :)
+If you don't have one, [Get one for free here](https://developer.okta.com/signup/)
 
 Additionally, you'll need the following software installed on your development machine to build and deploy this example:
 - Node.js 12+
