@@ -43,25 +43,29 @@ Additionally, you'll need the following software installed on your development m
 - OpenSSL libraries (included on any *nix distribution)
 
 ## Setup Steps
-### Step 1- Clone this repository into your development machine filesystem.
+### Step 1- Install and configure the serverless framework
+- [Get started here](https://www.serverless.com/framework/docs/getting-started/#via-npm)
+- [Provide the platform with AWS credentials](https://www.serverless.com/framework/docs/providers/aws/guide/credentials/)
+
+### Step 2- Clone this repository into your development machine filesystem.
 ```
 git clone https://github.com/dancinnamon-okta/okta-smartfhir-demo.git
 cd okta-smartfhir-demo
 ```
 
-### Step 2- Generate an SSL public/private key that will be used by the token endpoint to authenticate with Okta.
+### Step 3- Generate an SSL public/private key that will be used by the token endpoint to authenticate with Okta.
 ``` 
 openssl genrsa -out private_key.pem 2048
 openssl rsa -in private_key.pem -out public_key.pem -pubout -outform PEM
 ```
 ***Note - at this time the file names are hard-coded, so please name them exactly as-is (or submit a PR to make this configurable)***
 
-### Step 3- Install all of the libraries, and prepare for configuration
+### Step 4- Install all of the libraries, and prepare for configuration
 ```
 mv serverless.yml.example serverless.yml
 npm install
 ```
-### Step 4- Create the authorization server in Okta
+### Step 5- Create the authorization server in Okta
 In Okta, create a custom authorization server that you'll be using to authorize users in the demo.
 Update the serverless.yml with the proper details:
 ```
@@ -70,7 +74,7 @@ AUTHZ_SERVER: _YOUR_AUTHZ_SERVER_
 OKTA_ORG: _YOUR_ORG_.oktapreview.com
 ```
 
-### Step 5- Create the Patient Picker application in Okta
+### Step 6- Create the Patient Picker application in Okta
 In Okta, create a new OIDC web application, using the authorization code flow only.  Remember to assign your users to this app. 
 Update the serverless.yml file with the proper details:
 ```
@@ -79,14 +83,14 @@ PICKER_CLIENT_ID: _CLIENT_ID_FOR_PATIENT_PICKER_
 PICKER_CLIENT_SECRET: _CLIENT_SECRET_FOR_PATIENT_PICKER_
 ```
 
-### Step 6- Create an API key for the Patient Picker
+### Step 7- Create an API key for the Patient Picker
 At this time, the Patient Picker application uses an API key to read authorization server details, so we need an API key minted. PR's are welcome to update to use OAuth2 instead of an API key.
 Update the serverless.yml file with the proper details:
 ```
 API_KEY: _AN_API_KEY_
 ```
 
-### Step 7- Deploy!
+### Step 8- Deploy!
 To deploy this example, run the following command:
 ```
 serverless deploy -v
