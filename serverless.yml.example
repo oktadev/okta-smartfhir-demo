@@ -30,7 +30,7 @@ provider:
           
     AUTHZ_ISSUER: _OKTA_AUTHZ_SERVER_ISSUER_
     AUTHZ_SERVER: _OKTA_AUTHZ_SERVER_ID_
-    OKTA_ORG: _YOUROKTAORG_.oktapreview.com
+    OKTA_ORG: _YOUROKTASUBDOMAINNOPROTOCOL_.oktapreview.com
     STATE_COOKIE_SIGNATURE_KEY: JustPutAReallyLongValueHere!
     
     
