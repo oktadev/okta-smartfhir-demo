@@ -1,16 +1,19 @@
 # okta-smartfhir-demo
 This repository contains all of the components necessary to provide a SMART-launch compatible authorization platform leveraging Okta as the core identity authentication and authorization service.
 
+For full documentation on this reference Okta-SMART implementation, please refer to the dedicated repository here:
+https://github.com/dancinnamon-okta/okta-smartfhir-docs
+
 # Features
 The following features of the [SMART launch framework](http://hl7.org/fhir/smart-app-launch/index.html) are supported:
 - Standalone launch sequence
 - Launch parameters- including a patient picker for selecting the in-scope patient
-- Public and Confidential client applications- support for public clients w/o authentication until PKCE support is introduced into the specification
+- Public and Confidential client applications
 - Support for partial consent (OAuth2 downscoping)
 
 # Components
 This entire project is managed by the [serverless framework](https://www.serverless.com/) - which is an easy way to manage numerous cloud resources as a single unit. The codebase was developed for, and has been tested with AWS technologies.
-This repository includes the following endpoints:
+This repository includes the following high level endpoints:
 - **Authorize endpoint:** This endpoint is intended to be a lightweight proxy in front of Okta's /authorize endpoint, and handles the user flow to the patient picker and custom consent screen.
 - **Patient Picker:** The patient picker is a small application that enables the end user to select which patient they wish to consent and authorize for. Ultimately the patient picker will be updating the original application's /authorize request to remove the unapproved scopes, and to include the patient id.
 - **Okta Token Hook:** The token hook endpoint serves the purpose of validating the the authorize request actually went through the Patient Picker, and it also is responsible for processing the patient id selected by the user if any.
@@ -20,78 +23,3 @@ This repository includes the following endpoints:
 
 # High Level Architecture
 ![Simplified Architecture](https://github.com/dancinnamon-okta/okta-smartfhir-demo/blob/master/doc/simple_architecture.png)
-
-# Tested with clients
-These clients were used while developing this solution to ensure that the requirements of the SMART launch framework are correctly implemented:
-* [Inferno Test Suite](https://inferno.healthit.gov/community) - Public or confidential app
-* [SMART/FHIR iOS Demo](https://github.com/dancinnamon-okta/SoF-Demo) - Public app
-* [Demo Patient Portal](https://github.com/udplabs/zartan) - Confidential app
-* [Cerner SMART App Validator](https://smart.sandboxcerner.com/smart-app-validator-2.0/launch.html) - Public app
-
-
-# How to use
-Follow these steps to set this up in your own environment!
-## Prerequisites
-This example was designed and built for the AWS cloud- so you'll need an AWS account to run this example. The serverless framework used in this example supports other clouds as well, so updating for Azure or GCP should be relatively straightforward.
-
-You'll of course need an Okta tenant to run as intended :)
-If you don't have one, [Get one for free here](https://developer.okta.com/signup/)
-
-Additionally, you'll need the following software installed on your development machine to build and deploy this example:
-- Node.js 12+
-- Serverless framework ([Get started here](https://www.serverless.com/framework/docs/getting-started/#via-npm))
-- OpenSSL libraries (included on any *nix distribution)
-
-## Setup Steps
-### Step 1- Install and configure the serverless framework
-- [Get started here](https://www.serverless.com/framework/docs/getting-started/#via-npm)
-- [Provide the platform with AWS credentials](https://www.serverless.com/framework/docs/providers/aws/guide/credentials/)
-
-### Step 2- Clone this repository into your development machine filesystem.
-```
-git clone https://github.com/dancinnamon-okta/okta-smartfhir-demo.git
-cd okta-smartfhir-demo
-```
-
-### Step 3- Generate an SSL public/private key that will be used by the token endpoint to authenticate with Okta.
-``` 
-openssl genrsa -out private_key.pem 2048
-openssl rsa -in private_key.pem -out public_key.pem -pubout -outform PEM
-```
-***Note - at this time the file names are hard-coded, so please name them exactly as-is (or submit a PR to make this configurable)***
-
-### Step 4- Install all of the libraries, and prepare for configuration
-```
-mv serverless.yml.example serverless.yml
-npm install
-```
-### Step 5- Create the authorization server in Okta
-In Okta, create a custom authorization server that you'll be using to authorize users in the demo.
-Update the serverless.yml with the proper details:
-```
-AUTHZ_ISSUER: https://_YOUR_ORG_.oktapreview.com/oauth2/_YOUR_AUTHZ_SERVER_
-AUTHZ_SERVER: _YOUR_AUTHZ_SERVER_
-OKTA_ORG: _YOUR_ORG_.oktapreview.com
-```
-
-### Step 6- Create the Patient Picker application in Okta
-In Okta, create a new OIDC web application, using the authorization code flow only.  Remember to assign your users to this app. 
-Update the serverless.yml file with the proper details:
-```
-PICKER_DISPLAY_NAME: Patient Picker
-PICKER_CLIENT_ID: _CLIENT_ID_FOR_PATIENT_PICKER_
-PICKER_CLIENT_SECRET: _CLIENT_SECRET_FOR_PATIENT_PICKER_
-```
-
-### Step 7- Create an API key for the Patient Picker
-At this time, the Patient Picker application uses an API key to read authorization server details, so we need an API key minted. PR's are welcome to update to use OAuth2 instead of an API key.
-Update the serverless.yml file with the proper details:
-```
-API_KEY: _AN_API_KEY_
-```
-
-### Step 8- Deploy!
-To deploy this example, run the following command:
-```
-serverless deploy -v
-```
