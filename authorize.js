@@ -21,7 +21,16 @@ app.get('/authorize', (request, response) => {
 		scope: request.query.scope.split(' '),
 		redirect_uri: request.query.redirect_uri
 	};
-
+	
+	//Validate the "aud" parameter as part of the SMART launch framework requirements. If it's not included, or it's not matching the our audience value, reject the request.
+	var audParam = request.query.aud;
+	if(!audParam || audParam != process.env.GATEWAY_URL) {
+		console.log('An invalid audience was specified on the authorize request.');
+		console.log('Required aud:' + process.env.GATEWAY_URL)
+		console.log('Actual Aud:' + audParam)
+		response.status(400).send('An invalid audience was specified on the authorize request.')
+	}
+	
 	validateRedirectURL(request.query.client_id, request.query.redirect_uri)
 	.then((validationResponse) => {
 		console.log('Inbound data to be cached off for later:');
