@@ -4,17 +4,15 @@
   "version": "0.1.0",
   "dependencies": {
     "axios": "^0.19.2",
-    "cookie-parser": "^1.4.5",
+    "cookie": "^0.4.1",
+    "cookie-signature": "^1.1.0",
     "cors": "^2.8.5",
-    "express": "^4.17.1",
     "njwt": "^1.0.0",
     "nunjucks": "^3.2.2",
     "pem-jwk": "^2.0.0",
-    "serverless-http": "^2.6.0",
     "uuid": "^8.3.0"
   },
   "devDependencies": {
-    "serverless-apigateway-service-proxy": "^1.10.0",
-    "serverless-s3-sync": "^1.14.4"
+    "serverless-apigateway-service-proxy": "^1.10.0"
   }
 }
