@@ -6,11 +6,11 @@
 # - passthrough API endpoints for demo data, hosted by HAPI.org.
 
 service: okta-smartfhir-auth-demo
-  
+
 provider:
   name: aws
   runtime: nodejs12.x
-  stage: dev
+  stage: sandbox
   region: us-east-1
   
   logs:
@@ -28,86 +28,99 @@ provider:
           - '.amazonaws.com/'
           - ${opt:stage, self:provider.stage}
           
-    AUTHZ_ISSUER: _OKTA_AUTHZ_SERVER_ISSUER_
-    AUTHZ_SERVER: _OKTA_AUTHZ_SERVER_ID_
-    OKTA_ORG: _YOUROKTASUBDOMAINNOPROTOCOL_.oktapreview.com
+    AUTHZ_ISSUER: https://youroktaorg.oktapreview.com/oauth2/your_authz_server_id
+    AUTHZ_SERVER: your_authz_server_id
+    OKTA_ORG: youroktaorg.oktapreview.com
     STATE_COOKIE_SIGNATURE_KEY: JustPutAReallyLongValueHere!
     
-    
-    API_KEY: _READONLY_API_KEY_
+    #TODO: Get rid of.
+    API_KEY: your_api_key_here
     
     PICKER_DISPLAY_NAME: Patient Picker
-    PICKER_CLIENT_ID: _OKTA_PICKER_CLIENT_ID_
-    PICKER_CLIENT_SECRET: _OKTA_PICKER_CLIENT_SECRET_
+    PICKER_CLIENT_ID: patient_picker_client_id
+    PICKER_CLIENT_SECRET: patient_picker_client_secret
     
 #Lambda functions
 functions:
 
 ##METADATA ENDPOINTS
-  metadata-endpoints:
-    handler: metadata_endpoints.metadataEndpoints
+  smart-config-endpoint:
+    handler: ${self:provider.name}/metadata_endpoints.smartConfigHandler
     events:
       - http:
           path: /smart-configuration
           method: GET
-		  cors: true
+          cors: true
       - http:
           path: /.well-known/smart-configuration
           method: GET
-		  cors: true
+          cors: true
+          
+  metadata-endpoint:          
+    handler: ${self:provider.name}/metadata_endpoints.metadataHandler
+    events:
       - http:
           path: /metadata
           method: GET
-		  cors: true
+          cors: true
      
   keys_endpoint:
-    handler: keys.keysEndpoint
+    handler: ${self:provider.name}/keys.keysHandler
     events:
       - http:
           path: /keys
           method: GET
           cors: true
-
+          
 ##AUTHORIZE ENDPOINTS
   smart-authorize-proxy:
-    handler: authorize.smartAuthorizeProxy
+    handler: ${self:provider.name}/authorize.authorizeHandler
     events:
       - http:
           path: /authorize
           method: GET
+
+  picker-oidc-callback:
+    handler: ${self:provider.name}/authorize.pickerCallbackHandler
+    events:
       - http:
           path: /picker_oidc_callback
           method: GET
+      
+  smart-proxy-callback:
+    handler: ${self:provider.name}/authorize.authorizeCallbackHandler
+    events:
       - http:
           path: /smart_proxy_callback
-          method: GET          
+          method: GET
 
 ##TOKEN ENDPOINT
   smart-token-proxy:
-    handler: token.smartTokenProxy
+    handler: ${self:provider.name}/token.tokenHandler
     events:
       - http:
           path: /token
           method: POST
-		  cors: true
+          cors: true
           
 ##PATIENT PICKER UI          
-  patient_picker:
-    handler: patient_picker.patientPickerApp
+  patient_picker_get:
+    handler: ${self:provider.name}/patient_picker.patientPickerGetHandler
     events:
-
       - http:
           path: /patient_authorization
           method: GET
+  
+  patient_picker_post:
+    handler: ${self:provider.name}/patient_picker.patientPickerPostHandler          
+    events:
       - http:
           path: /patient_authorization
           method: POST
-      - http:
-          path: /static/{proxy+}
-          method: GET
+
 ##TOKEN HOOK  
   token_hook:
-    handler: token_hook.tokenHook
+    handler: ${self:provider.name}/token_hook.tokenHookHandler
     events:
       - http:
           path: /tokenhook
@@ -115,13 +128,11 @@ functions:
  
  ##MOCK PATIENT API 
   mock_patient_service:
-    handler: mock_patient_service.mockPatientService
+    handler: ${self:provider.name}/mock_patient_service.mockPatientServiceHandler
     events:
       - http:
           path: /patientMockService
           method: GET
-
-
           
 #############          
 #HAPI Proxies
