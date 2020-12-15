@@ -18,9 +18,9 @@ module.exports.tokenHookHandler = async (event, context) => {
 		console.log(error)
 		return {
 			statusCode: 200,
-			body: JSON.stringify("error": {
+			body: JSON.stringify({"error": {
 				errorSummary: "An unexpected error has occurred in the token hook. See the cloud logs for more detail."
-			})
+			}})
 		}
 	}
 }
