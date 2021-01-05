@@ -4,12 +4,14 @@
   "version": "0.1.0",
   "dependencies": {
     "axios": "^0.19.2",
+    "azure-function-log-intercept": "^1.0.7",
     "cookie": "^0.4.1",
     "cookie-signature": "^1.1.0",
     "cors": "^2.8.5",
     "njwt": "^1.0.0",
     "nunjucks": "^3.2.2",
     "pem-jwk": "^2.0.0",
+    "serverless-azure-functions": "^2.1.0",
     "uuid": "^8.3.0"
   },
   "devDependencies": {
