@@ -32,6 +32,7 @@ provider:
     AUTHZ_SERVER: your_authz_server_id
     OKTA_ORG: youroktaorg.oktapreview.com
     STATE_COOKIE_SIGNATURE_KEY: JustPutAReallyLongValueHere!
+    EXPECTED_AUD_VALUE: https://yourFHIRserver.com
     
     #TODO: Get rid of.
     API_KEY: your_api_key_here
