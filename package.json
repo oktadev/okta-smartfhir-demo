@@ -13,6 +13,7 @@
     "uuid": "^8.3.0"
   },
   "devDependencies": {
-    "serverless-apigateway-service-proxy": "^1.10.0"
+    "serverless-apigateway-service-proxy": "^1.10.0",
+    "serverless": "^1.73.1"
   }
 }
