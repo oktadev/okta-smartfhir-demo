@@ -15,7 +15,7 @@ provider:
   
   logs:
     restApi: true
-    
+
   environment:
 #This variable will contain the live API URL (https://XXXXX.execute-api.us-east-1.amazonaws.com/dev)
     GATEWAY_URL:
@@ -40,7 +40,21 @@ provider:
     PICKER_DISPLAY_NAME: Patient Picker
     PICKER_CLIENT_ID: patient_picker_client_id
     PICKER_CLIENT_SECRET: patient_picker_client_secret
-    
+
+    #DynamoDB Settings
+    CACHE_TABLE_NAME: 'refreshTokenCache'
+    CACHE_TTL_MINS: 1440
+#Provide additional access to allow read/write to our refresh token cache 
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:GetItem
+        - dynamodb:PutItem
+      Resource: 
+        Fn::GetAtt:
+          - refreshTokenCache
+          - Arn
+
 #Lambda functions
 functions:
 
@@ -151,3 +165,23 @@ functions:
 #################
 #END HAPI Proxies                
 #################
+
+# Other resources
+resources:
+  Resources:
+    refreshTokenCache:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName:  ${self:provider.environment.CACHE_TABLE_NAME}
+        AttributeDefinitions:
+          - AttributeName: token_id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: token_id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 1
+          WriteCapacityUnits: 1
+        TimeToLiveSpecification:
+          AttributeName: expires
+          Enabled: true
