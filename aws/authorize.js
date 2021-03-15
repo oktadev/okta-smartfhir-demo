@@ -24,7 +24,8 @@ module.exports.authorizeHandler = async (event, context) => {
 //See the authorize library for full details.
 //This endpoint should be moved over to the patient picker module.
 module.exports.pickerCallbackHandler = async (event, context) => {
-	var pickerCallbackResult = await authorizeLib.pickerCallbackHandler(event.queryStringParameters, event.headers.Cookie)
+	var pickerCallbackResult = await authorizeLib.pickerCallbackHandler(event.queryStringParameters, 
+																		event.headers[Object.keys(event.headers).find(key => key.toLowerCase() === 'cookie')])
 	return {
 		statusCode: pickerCallbackResult.statusCode,
 		body: JSON.stringify(pickerCallbackResult.body),
@@ -42,7 +43,8 @@ module.exports.pickerCallbackHandler = async (event, context) => {
 //Authorize OAuth2 callback proxy endpoint - AWS implementation.
 //See the authorize library for full details.
 module.exports.authorizeCallbackHandler = async (event, context) => {
-	var authorizeCallbackResult = await authorizeLib.authorizeCallbackHandler(event.queryStringParameters, event.headers.Cookie)
+	var authorizeCallbackResult = await authorizeLib.authorizeCallbackHandler(event.queryStringParameters, 
+																			  event.headers[Object.keys(event.headers).find(key => key.toLowerCase() === 'cookie')])
 	return {
 		statusCode: authorizeCallbackResult.statusCode,
 		body: JSON.stringify(authorizeCallbackResult.body),
