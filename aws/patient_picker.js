@@ -13,8 +13,7 @@ module.exports.patientPickerGetHandler = async (event, context) => {
 }
 
 module.exports.patientPickerPostHandler = async (event, context) => {
-	var postResult = await patientPickerLib.postHandler(event.body, 
-														event.headers[Object.keys(event.headers).find(key => key.toLowerCase() === 'cookie')])
+	var postResult = await patientPickerLib.postHandler(event.body, event.headers[Object.keys(event.headers).find(key => key.toLowerCase() === 'cookie')])
 	return {
 		statusCode: postResult.statusCode,
 		body: JSON.stringify(postResult.body),
