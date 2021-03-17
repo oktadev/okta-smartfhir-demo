@@ -1,0 +1,247 @@
+# This is an example of using Okta as the authorization server as part of a SMART/FHIR deployment.
+# This serverless configuration file is for deploying the solution on Azure cloud services.
+# It includes the following features:
+# - standalone launch with launch parameters
+# - a patient picker screen and OAuth2 scope selection and consent.
+# - applicable proxies for properly handling public client authentication as well as returning launch parameters in a flexible way.
+
+service: okta-smartfhir-auth-reference
+
+#Don't include stuff from the aws or google folder
+package:
+  exclude:
+    - aws/**
+    - google/**
+    
+provider:
+  name: azure
+  runtime: nodejs12
+  region: West US 2
+  os: linux
+  stage: sandbox
+  
+  apim:
+    apis:
+      - name: okta-smart-api
+        subscriptionRequired: false
+        displayName: Okta SMART Endpoints
+        description: Okta SMART Endpoints
+        protocols:
+          - https
+        
+        path: ${self:provider.stage}
+        authorization: none
+        
+    backends:
+      - name: smart-backend
+        url: api/smartendpoints
+
+    cors:
+      allowCredentials: false
+      allowedOrigins:
+        - "*"
+      allowedMethods:
+        - GET
+        - POST
+      allowedHeaders:
+        - "*"
+      exposeHeaders:
+        - "*"
+  
+  environment:
+     #Once the solution is deployed for the first time, this will require update.
+    GATEWAY_URL: https://GRAB_REAL_VALUE_HERE
+    
+    AUTHZ_ISSUER: YOUR OKTA AUTHZ ISSUER
+    AUTHZ_SERVER: AUTHZ SERVER ID
+    OKTA_ORG: YOUROKTAORG.oktapreview.com
+    STATE_COOKIE_SIGNATURE_KEY: JustPutAReallyLongValueHere!
+    
+    #TODO: Get rid of.
+    API_KEY: OKTA_API_KEY
+    
+    PICKER_DISPLAY_NAME: Patient Picker
+    PICKER_CLIENT_ID: PATIENT_PICKER_CLIENT_ID
+    PICKER_CLIENT_SECRET: PATIENT_PICKER_SECRET
+    
+    #Disable redirect_uri validation.
+    DISABLE_REDIRECT_URI_VALIDATION: true
+    
+plugins:
+    localPath: './azure/node_modules'
+    modules:
+      - serverless-azure-functions
+    
+#Azure functions
+functions:
+
+##METADATA ENDPOINTS
+  smart-config-endpoint:
+    handler: ${self:provider.name}/metadata_endpoints.smartConfigHandler
+    events:         
+      - http: true
+        authLevel: anonymous
+        route: smartendpoints/.well-known/smart-configuration
+        methods:
+          - get    
+    apim:
+      api: okta-smart-api
+      backend: smart-backend
+      operations:
+        - method: GET
+          urlTemplate: /.well-known/smart-configuration    
+   
+  metadata-endpoint:          
+    handler: ${self:provider.name}/metadata_endpoints.metadataHandler
+    events:
+      - http: true
+        authLevel: anonymous
+        route: smartendpoints/metadata
+        methods:
+          - get
+    apim:
+      api: okta-smart-api
+      backend: smart-backend
+      operations:
+        - method: GET
+          urlTemplate: /metadata
+
+  keys_endpoint:
+    handler: ${self:provider.name}/keys.keysHandler
+    events:
+      - http: true
+        authLevel: anonymous
+        route: smartendpoints/keys
+        methods:
+          - get
+    apim:
+      api: okta-smart-api
+      backend: smart-backend
+      operations:
+        - method: GET
+          urlTemplate: /keys
+
+##AUTHORIZE ENDPOINTS
+  smart-authorize-proxy:
+    handler: ${self:provider.name}/authorize.authorizeHandler
+    events:
+      - http: true
+        authLevel: anonymous
+        route: smartendpoints/authorize
+        methods:
+          - get
+    apim:
+      api: okta-smart-api
+      backend: smart-backend
+      operations:
+        - method: GET
+          urlTemplate: /authorize
+
+  picker-oidc-callback:
+    handler: ${self:provider.name}/authorize.pickerCallbackHandler
+    events:
+      - http: true
+        authLevel: anonymous
+        route: smartendpoints/picker_oidc_callback
+        methods:
+          - get
+    apim:
+      api: okta-smart-api
+      backend: smart-backend
+      operations:
+        - method: GET
+          urlTemplate: /picker_oidc_callback
+      
+  smart-proxy-callback:
+    handler: ${self:provider.name}/authorize.authorizeCallbackHandler
+    events:
+      - http: true
+        authLevel: anonymous
+        route: smartendpoints/smart_proxy_callback
+        methods:
+          - get
+    apim:
+      api: okta-smart-api
+      backend: smart-backend
+      operations:
+        - method: GET
+          urlTemplate: /smart_proxy_callback
+
+##TOKEN ENDPOINT
+  smart-token-proxy:
+    handler: ${self:provider.name}/token.tokenHandler
+    events:
+      - http: true
+        authLevel: anonymous
+        route: smartendpoints/token
+        methods:
+          - post
+    apim:
+      api: okta-smart-api
+      backend: smart-backend
+      operations:
+        - method: GET
+          urlTemplate: /token
+          
+##PATIENT PICKER UI          
+  patient_picker_get:
+    handler: ${self:provider.name}/patient_picker.patientPickerGetHandler
+    events:
+      - http: true
+        authLevel: anonymous
+        route: smartendpoints/patient_authorization
+        methods:
+          - get
+    apim:
+      api: okta-smart-api
+      backend: smart-backend
+      operations:
+        - method: GET
+          urlTemplate: /patient_authorization
+  
+  patient_picker_post:
+    handler: ${self:provider.name}/patient_picker.patientPickerPostHandler          
+    events:
+      - http: true
+        authLevel: anonymous
+        route: smartendpoints/patient_authorization
+        methods:
+          - post
+    apim:
+      api: okta-smart-api
+      backend: smart-backend
+      operations:
+        - method: POST
+          urlTemplate: /patient_authorization
+          
+##TOKEN HOOK  
+  token_hook:
+    handler: ${self:provider.name}/token_hook.tokenHookHandler
+    events:
+      - http: true
+        authLevel: anonymous
+        route: smartendpoints/tokenhook
+        methods:
+          - post
+    apim:
+      api: okta-smart-api
+      backend: smart-backend
+      operations:
+        - method: POST
+          urlTemplate: /tokenhook
+ 
+##MOCK PATIENT API 
+  mock_patient_service:
+    handler: ${self:provider.name}/mock_patient_service.mockPatientServiceHandler
+    events:
+      - http: true
+        authLevel: anonymous
+        route: smartendpoints/patientMockService
+        methods:
+          - get
+    apim:
+      api: okta-smart-api
+      backend: smart-backend
+      operations:
+        - method: GET
+          urlTemplate: /patientMockService

@@ -1,6 +1,6 @@
 {
   "name": "okta-smartfhir-auth-demo",
-  "description": "",
+  "description": "Reference implementation of SMART launch framework using Okta as the authorization server.",
   "version": "0.1.0",
   "dependencies": {
     "axios": "^0.21.1",
@@ -13,7 +13,6 @@
     "uuid": "^8.3.0"
   },
   "devDependencies": {
-    "serverless-apigateway-service-proxy": "^1.10.0",
-    "serverless": "^1.73.1"
+    "serverless": "^2.30.0"
   }
 }
