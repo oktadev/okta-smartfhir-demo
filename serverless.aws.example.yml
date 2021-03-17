@@ -7,6 +7,12 @@
 
 service: okta-smartfhir-auth-demo
 
+#Don't include stuff from the Azure or google folder
+package:
+  exclude:
+    - azure/**
+    - google/**
+    
 provider:
   name: aws
   runtime: nodejs12.x

@@ -1,0 +1,9 @@
+{
+  "name": "okta-smartfhir-auth-demo-azure",
+  "description": "Azure specific dependencies",
+  "version": "0.1.0",
+  "dependencies": {
+    "azure-function-log-intercept": "^1.0.7",
+    "serverless-azure-functions": "^2.1.0"
+  }
+}
