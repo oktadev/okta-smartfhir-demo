@@ -67,6 +67,27 @@ provider:
     #Disable redirect_uri validation.
     DISABLE_REDIRECT_URI_VALIDATION: true
     
+    CACHE_TABLE_NAME: 'refreshTokenCache'
+    CACHE_TTL_MINS: 1440
+    
+  armTemplate:
+    file: ./azure/cosmosdb_arm.json
+    parameters:
+      accountName:
+        value: ${self:service}-${self:provider.stage}
+        
+      location:
+        value: ${self:provider.region}
+      
+      databaseName:
+        value: ${self:provider.environment.CACHE_TABLE_NAME}
+    
+      containerName:
+        value: ${self:provider.environment.CACHE_TABLE_NAME}
+        
+      throughput:
+        value: 400
+        
 plugins:
     localPath: './azure/node_modules'
     modules:
