@@ -9,7 +9,10 @@ module.exports.smartConfigHandler = async (context, req) => {
 	var smartConfigResult = await metadataLib.smartConfigHandler()
 	context.res = {
 		status: 200,
-		body: JSON.stringify(smartConfigResult)
+		body: JSON.stringify(smartConfigResult),
+		headers: {
+			'content-type': 'application/json'
+		}
 	}
 }
 
@@ -18,6 +21,9 @@ module.exports.metadataHandler = async (context, req) => {
 	var metadataResult = await metadataLib.metadataHandler()
 	context.res = {
 		status: 200,
-		body: JSON.stringify(metadataResult)
+		body: JSON.stringify(metadataResult),
+		headers: {
+			'content-type': 'application/json'
+		}
 	}
 }

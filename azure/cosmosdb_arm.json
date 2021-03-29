@@ -86,7 +86,7 @@
 			  "id": "[variables('containerName')]",
 			  "partitionKey": {
 				"paths": [
-				  "/refeshTokenId"
+				  "/token_id"
 				],
 				"kind": "Hash"
 			  },

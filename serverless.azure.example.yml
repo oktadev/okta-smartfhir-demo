@@ -49,13 +49,14 @@ provider:
         - "*"
   
   environment:
-     #Once the solution is deployed for the first time, this will require update.
+#Once the solution is deployed for the first time, this will require update.
     GATEWAY_URL: https://GRAB_REAL_VALUE_HERE
     
     AUTHZ_ISSUER: YOUR OKTA AUTHZ ISSUER
     AUTHZ_SERVER: AUTHZ SERVER ID
     OKTA_ORG: YOUROKTAORG.oktapreview.com
     STATE_COOKIE_SIGNATURE_KEY: JustPutAReallyLongValueHere!
+    EXPECTED_AUD_VALUE: ${self:provider.environment.GATEWAY_URL}
     
     #TODO: Get rid of.
     API_KEY: OKTA_API_KEY
@@ -67,26 +68,32 @@ provider:
     #Disable redirect_uri validation.
     DISABLE_REDIRECT_URI_VALIDATION: true
     
-    CACHE_TABLE_NAME: 'refreshTokenCache'
+    CACHE_TABLE_NAME: 'refreshtokencache'
     CACHE_TTL_MINS: 1440
+
+    #These will require update after first deployment
+    CACHE_ENDPOINT: YOUR_COSMOSDB_ENDPOINT_VALUE_HERE
+    CACHE_KEY: YOUR_PRIMARY_COSMOSDB_KEY_HERE
     
-  armTemplate:
-    file: ./azure/cosmosdb_arm.json
-    parameters:
-      accountName:
-        value: ${self:service}-${self:provider.stage}
-        
-      location:
-        value: ${self:provider.region}
-      
-      databaseName:
-        value: ${self:provider.environment.CACHE_TABLE_NAME}
-    
-      containerName:
-        value: ${self:provider.environment.CACHE_TABLE_NAME}
-        
-      throughput:
-        value: 400
+##UNCOMMENT THIS AFTER FIRST DEPLOYMENT!!
+#Bug in serverless deploy: https://github.com/serverless/serverless-azure-functions/issues/516    
+#  armTemplate:
+#    file: ./azure/cosmosdb_arm.json
+#    parameters:
+#      accountName:
+#        value: ${self:service}-${self:provider.stage}
+#        
+#      location:
+#        value: ${self:provider.region}
+#      
+#      databaseName:
+#        value: ${self:provider.environment.CACHE_TABLE_NAME}
+#    
+#      containerName:
+#        value: ${self:provider.environment.CACHE_TABLE_NAME}
+#        
+#      throughput:
+#        value: 400
         
 plugins:
     localPath: './azure/node_modules'
