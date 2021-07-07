@@ -16,7 +16,12 @@ module.exports.tokenHandler = async (event, context) => {
 	return {
 		statusCode: handlerResponse.statusCode,
 		body: JSON.stringify(handlerResponse.body),
-		headers: {"Cache-Control": "no-store", "Pragma": "no-cache"}
+		headers: {
+			"Cache-Control": "no-store",
+			"Pragma": "no-cache",
+			'Access-Control-Allow-Origin': '*', // CORS
+			'Access-Control-Allow-Credentials': true // Required for cookies, authorization headers with HTTPS
+		}
 	}
 }
 
