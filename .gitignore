@@ -9,3 +9,4 @@ serverless.yml
 metadata_files/*.json
 
 *.pem
+okta_org_config.json

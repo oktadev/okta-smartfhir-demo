@@ -1,0 +1,15 @@
+{
+  "name": "okta",
+  "version": "1.0.0",
+  "description": "Script for automatically creating the proper objects in Okta to support the SMART launch framework.",
+  "main": "deploy_okta_objects.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Dan Cinnamon",
+  "license": "MIT",
+  "dependencies": {
+    "@okta/okta-sdk-nodejs": "^6.6.0",
+    "node-jose": "^2.1.1"
+  }
+}
