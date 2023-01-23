@@ -6,37 +6,63 @@ const jose = require('node-jose');
 const config = JSON.parse(fs.readFileSync('./okta_org_config.json', 'utf-8'));
 const client = getClient(config)
 
+const operation = process.argv[process.argv.length -1]
+
+
 console.log(`Setting up Okta org: ${config.OKTA_ORG}`)
 console.log(`With Suffix: ${config.SUFFIX}`)
-main()
+main(operation)
 
-async function main() {
-    const hookId = await createHooks(config, client)
-    const appDetails = await createApps(config, client)
-    await updateUserSchema(config, client)
-    const authzServerId = await createAuthzServer(config, client, hookId, appDetails.pickerClientId)
-
-    console.log('Okta objects created!')
-    console.log('Please configure the following in your serverless.yml:')
-    console.log('--------------------------------------------------------------------------')
-    console.log(`Authorization Server ID (FHIR_AUTHZ_SERVER_ID): ${authzServerId}`)
-    console.log('--------------------------------------------------------------------------')
-    console.log('Patient Picker App Details:')
-    console.log(`Patient Picker App Client ID (PICKER_CLIENT_ID): ${appDetails.pickerClientId}`)
-    console.log(`Patient Picker App Client Secret (PICKER_CLIENT_SECRET): ${appDetails.pickerClientSecret}`)
-    console.log('--------------------------------------------------------------------------')
-    console.log('Okta management API client Details:')
-    console.log('--------------------------------------------------------------------------')
-    console.log(`Okta management API Client ID (OKTA_API_CLIENTID): ${appDetails.apiM2MClientId}`)
-    console.log('Okta management API Private Key (OKTA_API_PRIVATEKEYFILE):')
-    console.log('Copy/Paste the object shown below into a file within your "keys" folder, and put the file name in OKTA_API_PRIVATEKEYFILE')
-    console.log('--------------------------------------------------------------------------')
-    console.log(appDetails.apiM2MClientPrivateKey)
-    console.log('--------------------------------------------------------------------------')
-    console.log('A sample confidential client application has been created for your convenience.  You may use this with the ONC Inferno test suite:')
-    console.log(`Client ID: ${appDetails.sampleAppId}`)
-    console.log(`Client Secret: ${appDetails.sampleAppSecret}`)
-    console.log('--------------------------------------------------------------------------')
+async function main(operation) {
+    if(operation == 'init'){
+        const appDetails = await createApps(config, client)
+        await updateUserSchema(config, client)
+        const authzServerId = await createAuthzServer(config, client)
+        console.log('Okta objects created!')
+        console.log('Please configure the following in your serverless.yml:')
+        console.log('--------------------------------------------------------------------------')
+        console.log(`Authorization Server ID (FHIR_AUTHZ_SERVER_ID): ${authzServerId}`)
+        console.log('--------------------------------------------------------------------------')
+        console.log('Patient Picker App Details:')
+        console.log(`Patient Picker App Client ID (PICKER_CLIENT_ID): ${appDetails.pickerClientId}`)
+        console.log(`Patient Picker App Client Secret (PICKER_CLIENT_SECRET): ${appDetails.pickerClientSecret}`)
+        console.log('--------------------------------------------------------------------------')
+        console.log('Okta management API client Details:')
+        console.log('--------------------------------------------------------------------------')
+        console.log(`Okta management API Client ID (OKTA_API_CLIENTID): ${appDetails.apiM2MClientId}`)
+        console.log('Okta management API Private Key (OKTA_API_PRIVATEKEYFILE):')
+        console.log('Copy/Paste the object shown below into a file within your "keys" folder, and put the file name in OKTA_API_PRIVATEKEYFILE')
+        console.log('--------------------------------------------------------------------------')
+        console.log(appDetails.apiM2MClientPrivateKey)
+        console.log('--------------------------------------------------------------------------')
+        console.log('A sample confidential client application has been created for your convenience.  You may use this with the ONC Inferno test suite:')
+        console.log(`Client ID: ${appDetails.sampleAppId}`)
+        console.log(`Client Secret: ${appDetails.sampleAppSecret}`)
+        console.log('--------------------------------------------------------------------------')
+    }
+    else if(operation == 'finalize') {
+        console.log('Finalizing Okta configuration post cloud deployment...')
+        const hookId = await createHooks(config, client)
+        const pickerClientId = await getPatientPickerClientId(config, client)
+        const authzServerId = await getAuthzServerId(config, client)
+        if(hookId && pickerClientId && authzServerId) {
+            await addAuthzPolicies(config, client, authzServerId, hookId, pickerClientId)
+            console.log('Finished Okta configuration! Your SMART authorization service is now ready.')        
+        }
+        else {
+            console.log('Unable to finish authorization policy setup.  Either your inline hook was not created properly, or we could not find your base configuration.')
+            console.log('Make sure you have not changed your SUFFIX variable, or renamed any of your applications within Okta.')
+            console.log(`Hook ID: ${hookId}`)
+            console.log(`Patient Picker App ID: ${pickerClientId}`)
+            console.log(`Okta Authorization server ID: ${authzServerId}`)
+        }
+    }
+    else {
+        console.log('Invalid operation. Please end your command with either "init" to lay down a base config prior to cloud resource deployment, or "finalize" to apply post cloud deploy resources.')
+        console.log('node deploy_okta_objects.js init')
+        console.log('node deploy_okta_objects.js finalize')
+    }
+    
 }
 
 //Create Token Hook
@@ -168,7 +194,7 @@ async function createApp(config, client, appModel) {
 }
 
 //Create Necessary Authz Server
-async function createAuthzServer(config, client, inlineHookId, patientPickerAppId) {
+async function createAuthzServer(config, client) {
     var authzServerModel = models.authzServer
     if(config.SUFFIX) {
         authzServerModel.name += '-' + config.SUFFIX
@@ -176,8 +202,6 @@ async function createAuthzServer(config, client, inlineHookId, patientPickerAppI
     authzServerModel.audiences.push(config.FHIR_BASE_URL)
 
     console.log(`Creating authorization server: ${authzServerModel.name}`)
-    console.log(`Inline Hook Id: ${inlineHookId}`)
-    console.log(`Patient Picker App Id: ${patientPickerAppId}`)
 
     var foundAuthzServer = null
     //See if we have this object already.  If we do, let's skip.
@@ -198,12 +222,10 @@ async function createAuthzServer(config, client, inlineHookId, patientPickerAppI
         console.debug(authzServerModel)
     
         const createdAuthzServer = await client.createAuthorizationServer(authzServerModel)
-    
         console.log('Authorization Server Created.')
         await addAuthzScopes(config, client, createdAuthzServer.id)
         await addAuthzClaims(config, client, createdAuthzServer.id)
-        await addAuthzPolicies(config, client, createdAuthzServer.id, inlineHookId, patientPickerAppId)
-        console.log('Finished configuration of the authorization server.')
+        console.log('Finished initial authorization server configuration.')
         return createdAuthzServer.id
     }
     else {
@@ -313,7 +335,51 @@ async function getPublicPrivateJwks() {
     }
 }
 
-//Custom domain later! Different script??
+async function getPatientPickerClientId(config, client) {
+    console.log('Finding the patient picker app created during the intialization phase...')
+    var patientPickerName = models.patientPickerApp.label
+    var foundApp = null
+
+    if(config.SUFFIX) {
+        patientPickerName += '-' + config.SUFFIX
+    }
+    const query = {'filter': 'name eq "oidc_client"'}
+    //See if we have this object already.  If we do, let's skip.
+    await client.listApplications(query).each(app => {
+        if(app.label == patientPickerName) {
+            foundApp = app
+            return
+        }
+    })
+    if(foundApp) {
+        return foundApp.id
+    }
+    else {
+        return null
+    }
+}
+
+async function getAuthzServerId(config, client) {
+    var authzServerName = models.authzServer.name
+    if(config.SUFFIX) {
+        authzServerName += '-' + config.SUFFIX
+    }
+    var foundAuthzServer = null
+    //See if we have this object already.  If we do, let's skip.
+    //const existingHooks = await client.listInlineHooks(query)
+    await client.listAuthorizationServers({'q': authzServerName}).each(server => {
+        if(server.name == authzServerName) {
+            foundAuthzServer = server
+            return
+        }
+    })
+    if(foundAuthzServer) {
+        return foundAuthzServer.id
+    }
+    else {
+        return null
+    }
+}
 
 function getClient(config) {
     return new okta.Client({
