@@ -31,7 +31,7 @@ async function main(operation) {
         console.log('--------------------------------------------------------------------------')
         console.log(`Okta management API Client ID (OKTA_API_CLIENTID): ${appDetails.apiM2MClientId}`)
         console.log('Okta management API Private Key (OKTA_API_PRIVATEKEYFILE):')
-        console.log('Copy/Paste the object shown below into a file within your "keys" folder, and put the file name in OKTA_API_PRIVATEKEYFILE')
+        console.log('Copy/Paste the object shown below into a new file called okta-api-key.jwks within your "keys" folder.')
         console.log('--------------------------------------------------------------------------')
         console.log(JSON.stringify(appDetails.apiM2MClientPrivateKey))
         console.log('--------------------------------------------------------------------------')

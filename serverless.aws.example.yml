@@ -49,7 +49,7 @@ params:
 
     #OAuth2 M2M clientid/secret used to call Okta API to get scope data for the patient picker.
     OKTA_API_CLIENTID: Get from patient picker app from okta console
-    OKTA_API_PRIVATEKEYFILE: Get from patient picker app from okta console
+    OKTA_API_PRIVATEKEYFILE: ./keys/okta-api-key.jwks
 
     #This key is used as a signing key for the transactional cookies that we store as part of the authorization flow.
     STATE_COOKIE_SIGNATURE_KEY: JustPutAReallyLongValueHere!
