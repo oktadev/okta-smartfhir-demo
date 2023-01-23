@@ -12,14 +12,14 @@ package:
   exclude:
     - aws/**
     - google/**
-    
+
 provider:
   name: azure
   runtime: nodejs12
   region: West US 2
   os: linux
   stage: sandbox
-  
+
   apim:
     apis:
       - name: okta-smart-api
@@ -28,10 +28,10 @@ provider:
         description: Okta SMART Endpoints
         protocols:
           - https
-        
+
         path: ${self:provider.stage}
         authorization: none
-        
+
     backends:
       - name: smart-backend
         url: api/smartendpoints
@@ -47,107 +47,61 @@ provider:
         - "*"
       exposeHeaders:
         - "*"
-  
+
   environment:
 #Once the solution is deployed for the first time, this will require update.
     GATEWAY_URL: https://GRAB_REAL_VALUE_HERE
-    
+
     AUTHZ_ISSUER: YOUR OKTA AUTHZ ISSUER
     AUTHZ_SERVER: AUTHZ SERVER ID
     OKTA_ORG: YOUROKTAORG.oktapreview.com
     STATE_COOKIE_SIGNATURE_KEY: JustPutAReallyLongValueHere!
     EXPECTED_AUD_VALUE: ${self:provider.environment.GATEWAY_URL}
-    
+
     #TODO: Get rid of.
     API_KEY: OKTA_API_KEY
-    
+
     PICKER_DISPLAY_NAME: Patient Picker
     PICKER_CLIENT_ID: PATIENT_PICKER_CLIENT_ID
     PICKER_CLIENT_SECRET: PATIENT_PICKER_SECRET
-    
+
     #Disable redirect_uri validation.
     DISABLE_REDIRECT_URI_VALIDATION: true
-    
+
     CACHE_TABLE_NAME: 'refreshtokencache'
     CACHE_TTL_MINS: 1440
 
     #These will require update after first deployment
     CACHE_ENDPOINT: YOUR_COSMOSDB_ENDPOINT_VALUE_HERE
     CACHE_KEY: YOUR_PRIMARY_COSMOSDB_KEY_HERE
-    
+
 ##UNCOMMENT THIS AFTER FIRST DEPLOYMENT!!
-#Bug in serverless deploy: https://github.com/serverless/serverless-azure-functions/issues/516    
+#Bug in serverless deploy: https://github.com/serverless/serverless-azure-functions/issues/516
 #  armTemplate:
 #    file: ./azure/cosmosdb_arm.json
 #    parameters:
 #      accountName:
 #        value: ${self:service}-${self:provider.stage}
-#        
+#
 #      location:
 #        value: ${self:provider.region}
-#      
+#
 #      databaseName:
 #        value: ${self:provider.environment.CACHE_TABLE_NAME}
-#    
+#
 #      containerName:
 #        value: ${self:provider.environment.CACHE_TABLE_NAME}
-#        
+#
 #      throughput:
 #        value: 400
-        
+
 plugins:
     localPath: './azure/node_modules'
     modules:
       - serverless-azure-functions
-    
+
 #Azure functions
 functions:
-
-##METADATA ENDPOINTS
-  smart-config-endpoint:
-    handler: ${self:provider.name}/metadata_endpoints.smartConfigHandler
-    events:         
-      - http: true
-        authLevel: anonymous
-        route: smartendpoints/.well-known/smart-configuration
-        methods:
-          - get    
-    apim:
-      api: okta-smart-api
-      backend: smart-backend
-      operations:
-        - method: GET
-          urlTemplate: /.well-known/smart-configuration    
-   
-  metadata-endpoint:          
-    handler: ${self:provider.name}/metadata_endpoints.metadataHandler
-    events:
-      - http: true
-        authLevel: anonymous
-        route: smartendpoints/metadata
-        methods:
-          - get
-    apim:
-      api: okta-smart-api
-      backend: smart-backend
-      operations:
-        - method: GET
-          urlTemplate: /metadata
-
-  keys_endpoint:
-    handler: ${self:provider.name}/keys.keysHandler
-    events:
-      - http: true
-        authLevel: anonymous
-        route: smartendpoints/keys
-        methods:
-          - get
-    apim:
-      api: okta-smart-api
-      backend: smart-backend
-      operations:
-        - method: GET
-          urlTemplate: /keys
 
 ##AUTHORIZE ENDPOINTS
   smart-authorize-proxy:
@@ -179,7 +133,7 @@ functions:
       operations:
         - method: GET
           urlTemplate: /picker_oidc_callback
-      
+
   smart-proxy-callback:
     handler: ${self:provider.name}/authorize.authorizeCallbackHandler
     events:
@@ -210,8 +164,8 @@ functions:
       operations:
         - method: GET
           urlTemplate: /token
-          
-##PATIENT PICKER UI          
+
+##PATIENT PICKER UI
   patient_picker_get:
     handler: ${self:provider.name}/patient_picker.patientPickerGetHandler
     events:
@@ -226,9 +180,9 @@ functions:
       operations:
         - method: GET
           urlTemplate: /patient_authorization
-  
+
   patient_picker_post:
-    handler: ${self:provider.name}/patient_picker.patientPickerPostHandler          
+    handler: ${self:provider.name}/patient_picker.patientPickerPostHandler
     events:
       - http: true
         authLevel: anonymous
@@ -241,8 +195,8 @@ functions:
       operations:
         - method: POST
           urlTemplate: /patient_authorization
-          
-##TOKEN HOOK  
+
+##TOKEN HOOK
   token_hook:
     handler: ${self:provider.name}/token_hook.tokenHookHandler
     events:
@@ -257,8 +211,8 @@ functions:
       operations:
         - method: POST
           urlTemplate: /tokenhook
- 
-##MOCK PATIENT API 
+
+##MOCK PATIENT API
   mock_patient_service:
     handler: ${self:provider.name}/mock_patient_service.mockPatientServiceHandler
     events:

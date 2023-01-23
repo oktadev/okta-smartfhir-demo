@@ -3,16 +3,19 @@
   "description": "Reference implementation of SMART launch framework using Okta as the authorization server.",
   "version": "0.1.0",
   "dependencies": {
-    "axios": "^0.21.2",
+    "@okta/okta-sdk-nodejs": "^6.6.0",
+    "axios": "^0.27.2",
     "cookie": "^0.4.1",
     "cookie-signature": "^1.1.0",
     "cors": "^2.8.5",
-    "njwt": "^1.0.0",
+    "njwt": "^1.2.0",
     "nunjucks": "^3.2.2",
     "pem-jwk": "^2.0.0",
     "uuid": "^8.3.0"
   },
   "devDependencies": {
-    "serverless": "^2.30.0"
+    "serverless": "^3.21.0",
+    "serverless-certificate-creator": "^1.6.0",
+    "serverless-domain-manager": "^6.0.3"
   }
 }
