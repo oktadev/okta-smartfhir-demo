@@ -39,7 +39,7 @@ params:
 
     #Your Okta domain name: ex- dev-xxxx.okta.com
     #This is mainly used for API calls by the patient picker to get scope definitions and such.
-    OKTA_ORG: dev-xxxx.okta.com
+    OKTA_ORG: https://dev-xxxx.okta.com
 
     #The Okta custom backend domain name for Okta custom domain names.
     OKTA_CUSTOM_DOMAIN_NAME_BACKEND: get-value-from-custom-domain-setup.customdomains.okta.com
@@ -108,7 +108,7 @@ provider:
 
     #This is a link to the Okta "ORG LEVEL" authz server for getting tokens to be used against the Okta API.
     #TODO: See if we can also use the custom authz server for cleanliness purposes.
-    OKTA_CLIENT_TOKEN_ENDPOINT: https://${param:OKTA_ORG}/oauth2/v1/token #USED
+    OKTA_CLIENT_TOKEN_ENDPOINT: ${param:OKTA_ORG}/oauth2/v1/token #USED
 
     DISABLE_REDIRECT_URI_VALIDATION: ${param:DISABLE_REDIRECT_URI_VALIDATION} #USED
 

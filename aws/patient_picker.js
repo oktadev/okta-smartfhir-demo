@@ -22,7 +22,7 @@ module.exports.patientPickerPostHandler = async (event, context) => {
 		},
 		multiValueHeaders: {
 			'Set-Cookie': [
-				'appProxyAuthzState=' + postResult.appProxyAuthzStateCookie + '; Secure; HttpOnly; Path=/;',
+				`appProxyAuthzState=${postResult.appProxyAuthzStateCookie}; Secure; HttpOnly; Path=/;`,
 				'apiAccessToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT',
 				'pickerAuthzState=; expires=Thu, 01 Jan 1970 00:00:00 GMT'
 			]
@@ -43,7 +43,7 @@ module.exports.pickerCallbackHandler = async (event, context) => {
 		},
 		multiValueHeaders: {
 			'Set-Cookie': [
-				'apiAccessToken=' + pickerCallbackResult.apiAccessTokenCookie + '; Secure; HttpOnly; Path=/;',
+				`apiAccessToken=${pickerCallbackResult.apiAccessTokenCookie}; Secure; HttpOnly; Path=/;`,
 			]
 		}
 	}

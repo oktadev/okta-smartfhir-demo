@@ -122,7 +122,8 @@ module.exports.sampleConfidentialApp = {
                 "code"
             ],
             "grant_types": [
-                "authorization_code"
+                "authorization_code",
+                "refresh_token"
             ],
             "initiate_login_uri": "",
             "application_type": "web",

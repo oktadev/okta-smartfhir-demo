@@ -33,7 +33,7 @@ async function main(operation) {
         console.log('Okta management API Private Key (OKTA_API_PRIVATEKEYFILE):')
         console.log('Copy/Paste the object shown below into a file within your "keys" folder, and put the file name in OKTA_API_PRIVATEKEYFILE')
         console.log('--------------------------------------------------------------------------')
-        console.log(appDetails.apiM2MClientPrivateKey)
+        console.log(JSON.stringify(appDetails.apiM2MClientPrivateKey))
         console.log('--------------------------------------------------------------------------')
         console.log('A sample confidential client application has been created for your convenience.  You may use this with the ONC Inferno test suite:')
         console.log(`Client ID: ${appDetails.sampleAppId}`)
@@ -139,7 +139,7 @@ async function createApps(config, client) {
 
     //Fill in what we need for our confidential client example deployment.
     sampleConfidentialModel.settings.oauthClient.redirect_uris.push(`https://${config.AUTHZ_BASE_DOMAIN}/smart_proxy_callback`)
-    sampleConfidentialModel.settings.oauthClient.redirect_uris.push(`https://${config.AUTHZ_BASE_DOMAIN}/https://inferno.healthit.gov/suites/custom/smart/redirect`)
+    sampleConfidentialModel.settings.oauthClient.redirect_uris.push(`https://inferno.healthit.gov/suites/custom/smart/redirect`)
     const sampleAppDetails = await createApp(config, client, sampleConfidentialModel)
     return {
         "pickerClientId": pickerDetails.id,
@@ -266,6 +266,7 @@ async function addAuthzPolicies(config, client, authzServerId, inlineHookId, pat
     const smartAppAuthzPolicyRule = models.smartAppAuthzPolicyRule
 
     console.log('Adding authorization policy: ' + patientPickerAuthzPolicy.name)
+    patientPickerAuthzPolicy.conditions.clients.include.push(patientPickerAppId)
     const createdPickerAuthzPolicy = await client.createAuthorizationServerPolicy(authzServerId, patientPickerAuthzPolicy)
     console.log('Adding authorization policy rule : ' + patientPickerAuthzPolicyRule.name)
     await client.createAuthorizationServerPolicyRule(createdPickerAuthzPolicy.id, authzServerId, patientPickerAuthzPolicyRule)
@@ -322,15 +323,16 @@ async function getPublicPrivateJwks() {
             n: newKey.n
         },
         privateKey: {
-            d: newKey.d,
-            p: newKey.p,
-            q: newKey.q,
-            dp: newKey.dp,
-            qi: newKey.qi,
-            kty: newKey.kty,
-            e: newKey.e,
-            kid: newKey.kid,
-            n: newKey.n
+            "d": newKey.d,
+            "p": newKey.p,
+            "q": newKey.q,
+            "dp": newKey.dp,
+            "dq": newKey.dq,
+            "qi": newKey.qi,
+            "kty": newKey.kty,
+            "e": newKey.e,
+            "kid": newKey.kid,
+            "n": newKey.n
         }
     }
 }
