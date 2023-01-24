@@ -57,6 +57,12 @@ async function main(operation) {
             console.log(`Okta Authorization server ID: ${authzServerId}`)
         }
     }
+    else if(operation == 'sampleuser') {
+        console.log('Creating sample user...')
+        const userId = await createSampleUser(config, client)
+        console.log('Sample user created! You may now login with the username/password you specified in your configuration.')
+
+    }
     else {
         console.log('Invalid operation. Please end your command with either "init" to lay down a base config prior to cloud resource deployment, or "finalize" to apply post cloud deploy resources.')
         console.log('node deploy_okta_objects.js init')
@@ -307,6 +313,26 @@ async function updateUserSchema(config, client) {
     else {
         console.log(`The fhirUser user attribute already exists. Skipping create. Please manually delete it first and try again.`)
     }
+}
+
+//Create fhirUser user attribute
+async function createSampleUser(config, client) {
+    var userModel = models.sampleUser
+    userModel.profile.email = config.SAMPLE_USEREMAIL
+    userModel.profile.firstName = config.SAMPLE_USEREMAIL
+    userModel.profile.lastName = config.SAMPLE_USEREMAIL
+    userModel.profile.login = config.SAMPLE_USEREMAIL
+    userModel.credentials.password.value = config.SAMPLE_USERPASSWORD
+
+    if(config.SAMPLE_USERTYPE == 'patient') {
+        userModel.profile.fhirUser = `${config.FHIR_BASE_URL}/Patient/${config.SAMPLE_USERFHIRID}`
+    }
+    else {
+        userModel.profile.fhirUser = `${config.FHIR_BASE_URL}/Practitioner/${config.SAMPLE_USERFHIRID}`
+    }
+    console.log(`Creating user: ${config.SAMPLE_USEREMAIL}`)
+    const usr = await client.createUser(userModel)
+    return usr.id
 }
 
 async function getPublicPrivateJwks() {

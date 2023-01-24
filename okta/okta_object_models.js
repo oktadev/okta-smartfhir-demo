@@ -356,3 +356,15 @@ module.exports.smartAppAuthzPolicyRule = {
     },
     "type": "RESOURCE_ACCESS"
 }
+module.exports.sampleUser = {
+    "profile": {
+        "lastName": "",
+        "login": "",
+        "firstName": "",
+        "fhirUser": "",
+        "email": ""
+    },
+    "credentials": {
+        "password" : { "value": "" }
+    }
+}
