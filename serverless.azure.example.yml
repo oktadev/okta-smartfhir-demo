@@ -12,6 +12,7 @@ package:
   exclude:
     - aws/**
     - google/**
+    - deploy/**
 
 provider:
   name: azure

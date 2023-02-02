@@ -1,0 +1,14 @@
+{
+  "name": "okta_smart_fhir_deploy_scripts",
+  "version": "1.0.0",
+  "description": "Scripts intended to ease the process of deploying SMART FHIR with Okta",
+  "main": "deploy_aws.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "yaml": "^2.2.1"
+  }
+}

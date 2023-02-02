@@ -3,23 +3,24 @@ const models = require('./okta_object_models');
 const fs = require('fs');
 const okta = require('@okta/okta-sdk-nodejs');
 const jose = require('node-jose');
-const config = JSON.parse(fs.readFileSync('./okta_org_config.json', 'utf-8'));
-const client = getClient(config)
 
-const operation = process.argv[process.argv.length -1]
+if(require.main === module) {
+    const config = JSON.parse(fs.readFileSync(process.argv[process.argv.length - 2], 'utf-8'));
+    const operation = process.argv[process.argv.length - 1]
 
+    console.log(`Setting up Okta org: ${config.OKTA_ORG}`)
+    console.log(`With Suffix: ${config.SUFFIX}`)
+    main(config, operation)
+}
 
-console.log(`Setting up Okta org: ${config.OKTA_ORG}`)
-console.log(`With Suffix: ${config.SUFFIX}`)
-main(operation)
-
-async function main(operation) {
+async function main(config, operation) {
+    const client = getClient(config)
     if(operation == 'init'){
         const appDetails = await createApps(config, client)
         await updateUserSchema(config, client)
         const authzServerId = await createAuthzServer(config, client)
         console.log('Okta objects created!')
-        console.log('Please configure the following in your serverless.yml:')
+        console.log('If you are following the manual, unguided process- please configure the following in your serverless.yml:')
         console.log('--------------------------------------------------------------------------')
         console.log(`Authorization Server ID (FHIR_AUTHZ_SERVER_ID): ${authzServerId}`)
         console.log('--------------------------------------------------------------------------')
@@ -39,6 +40,14 @@ async function main(operation) {
         console.log(`Client ID: ${appDetails.sampleAppId}`)
         console.log(`Client Secret: ${appDetails.sampleAppSecret}`)
         console.log('--------------------------------------------------------------------------')
+
+        return {
+            oktaApiClientId: appDetails.apiM2MClientId,
+            oktaApiPrivateKey: appDetails.apiM2MClientPrivateKey,
+            pickerClientId: appDetails.pickerClientId,
+            pickerClientSecret: appDetails.pickerClientSecret,
+            authorizationServerId: authzServerId
+        }
     }
     else if(operation == 'finalize') {
         console.log('Finalizing Okta configuration post cloud deployment...')
@@ -210,8 +219,6 @@ async function createAuthzServer(config, client) {
     console.log(`Creating authorization server: ${authzServerModel.name}`)
 
     var foundAuthzServer = null
-    //See if we have this object already.  If we do, let's skip.
-    //const existingHooks = await client.listInlineHooks(query)
     await client.listAuthorizationServers({'q': authzServerModel.name}).each(server => {
         if(server.name == authzServerModel.name) {
             foundAuthzServer = server
@@ -416,3 +423,5 @@ function getClient(config) {
     });
     
 }
+
+module.exports.main = main

@@ -16,7 +16,7 @@ package:
   exclude:
     - azure/**
     - google/**
-    - okta/**
+    - deploy/**
 
 plugins:
   - serverless-certificate-creator
@@ -170,7 +170,7 @@ functions:
           method: POST
 
   picker-oidc-callback:
-    handler: ${self:provider.name}/patient_picker.pickerCallbackHandler #TODO: Move to the patient picker stuff.
+    handler: ${self:provider.name}/patient_picker.pickerCallbackHandler
     events:
       - http:
           path: /picker_oidc_callback

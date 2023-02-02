@@ -2,6 +2,7 @@
   "name": "okta-smartfhir-auth-demo-azure",
   "description": "Azure specific dependencies",
   "version": "0.1.0",
+  "license": "MIT",
   "dependencies": {
     "@azure/cosmos": "^3.10.3",
     "azure-function-log-intercept": "^1.0.7",
