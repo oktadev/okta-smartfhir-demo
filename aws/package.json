@@ -1,8 +1,0 @@
-{
-  "name": "okta-smartfhir-auth-demo-aws",
-  "description": "AWS specific dependencies",
-  "version": "0.1.0",
-  "devDependencies": {
-    "serverless-apigateway-service-proxy": "^1.10.0"
-  }
-}

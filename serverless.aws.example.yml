@@ -1,62 +1,128 @@
-# This is a rough example of using Okta as the authorization server as part of a SMART/FHIR deployment.
+# This is an example of using Okta as the authorization server as part of a SMART/FHIR deployment.
+# This serverless configuration file is for deploying the solution on AWS cloud services.
+
 # It includes the following features:
 # - standalone launch with launch parameters
-# - a patient picker screen and OAuth2 scope selection and consent.
-# - applicable proxies for properly handling public client authentication as well as returning launch parameters in a flexible way.
-# - passthrough API endpoints for demo data, hosted by HAPI.org.
+# - a patient picker screen and OAuth2 scope selection and custom consent.
+# - applicable proxies for properly handling launch parameters in a flexible way.
 
-service: okta-smartfhir-auth-demo
+#Required:
+# - A FHIR server you wish to protect.  If you need an example, see: https://github.com/dancinnamon-okta/secured-fhir-proxy
 
+
+service: okta-ref-smart-service
 #Don't include stuff from the Azure or google folder
 package:
   exclude:
     - azure/**
     - google/**
-    
+    - deploy/**
+
+plugins:
+  - serverless-certificate-creator
+  - serverless-domain-manager
+
+params:
+  default:
+    #The AWS region you'd like to use.
+    AWS_REGION: us-east-1
+
+    #The domain name you want publicly as the base domain name for the authorization service.
+    BASE_DOMAIN: authz.your.tld
+
+    #Route53 hosted domain (include the period at the end)
+    BASE_URL_TLD: your.tld.
+
+    #The base url of the FHIR server you wish to protect.
+    #This is validated by the /authorize endpoint to ensure the proper SMART "aud" parameter is included in the request.
+    FHIR_BASE_URL: https://your.fhir.server
+
+    #Your Okta domain name: ex- dev-xxxx.okta.com
+    #This is mainly used for API calls by the patient picker to get scope definitions and such.
+    OKTA_ORG: https://dev-xxxx.okta.com
+
+    #The Okta custom backend domain name for Okta custom domain names.
+    OKTA_CUSTOM_DOMAIN_NAME_BACKEND: get-value-from-custom-domain-setup.customdomains.okta.com
+
+    #The backend domain name for the api gateway deployment.
+    API_GATEWAY_DOMAIN_NAME_BACKEND: get this value from serverless create_domain output
+
+    #OAuth2 M2M clientid/secret used to call Okta API to get scope data for the patient picker.
+    OKTA_API_CLIENTID: Get from patient picker app from okta console
+    OKTA_API_PRIVATEKEYFILE: ./keys/okta-api-key.jwks
+
+    #This key is used as a signing key for the transactional cookies that we store as part of the authorization flow.
+    STATE_COOKIE_SIGNATURE_KEY: JustPutAReallyLongValueHere!
+
+    #ID/key used for end user access into the patient picker app.
+    #Also used by the picker to sign the JWT back to Okta to tell Okta of the user's selections.
+    PICKER_DISPLAY_NAME: Patient Picker
+    PICKER_CLIENT_ID: Get from patient picker app from Okta console
+    PICKER_CLIENT_SECRET: Get from patient picker app from Okta console
+
+    #ID of the authorization server/API in Okta - used to build authorize/token endpoints, and for API calls to look up scopes and such
+    FHIR_AUTHZ_SERVER_ID: Get from Okta console - get ID of the FHIR API authz server.
+
+    #Disable redirect_uri validation.
+    DISABLE_REDIRECT_URI_VALIDATION: false
+
+    #DynamoDB Settings
+    CACHE_TABLE_NAME: refreshTokenCache
+    CACHE_TTL_MINS: 1440
+
+##Shouldn't have to touch anything below this line!##
 provider:
   name: aws
   runtime: nodejs12.x
-  stage: sandbox
-  region: us-east-1
-  
+  stage: demo
+  region: ${param:AWS_REGION}
+
   logs:
     restApi: true
 
   environment:
-#This variable will contain the live API URL (https://XXXXX.execute-api.us-east-1.amazonaws.com/dev)
-    GATEWAY_URL:
-      !Join
-        - ''
-        - - 'https://'
-          - !Ref ApiGatewayRestApi
-          - '.execute-api.'
-          - ${opt:region, self:provider.region}
-          - '.amazonaws.com/'
-          - ${opt:stage, self:provider.stage}
-          
-    AUTHZ_ISSUER: https://youroktaorg.oktapreview.com/oauth2/your_authz_server_id
-    AUTHZ_SERVER: your_authz_server_id
-    OKTA_ORG: youroktaorg.oktapreview.com
-    STATE_COOKIE_SIGNATURE_KEY: JustPutAReallyLongValueHere!
-    EXPECTED_AUD_VALUE: https://yourFHIRserver.com
-    
-    #TODO: Get rid of.
-    API_KEY: your_api_key_here
-    
-    PICKER_DISPLAY_NAME: Patient Picker
-    PICKER_CLIENT_ID: patient_picker_client_id
-    PICKER_CLIENT_SECRET: patient_picker_client_secret
+    BASE_DOMAIN: ${param:BASE_DOMAIN} #USED
+  
+    OKTA_ORG: ${param:OKTA_ORG} #USED
+
+    OIDC_AUTHORIZE_URL: https://${param:BASE_DOMAIN}/oauth2/${param:FHIR_AUTHZ_SERVER_ID}/v1/authorize #USED
+    OIDC_INTROSPECT_URL: https://${param:BASE_DOMAIN}/oauth2/${param:FHIR_AUTHZ_SERVER_ID}/v1/introspect #USED
+    INTERNAL_TOKEN_URL: https://${param:OKTA_CUSTOM_DOMAIN_NAME_BACKEND}/oauth2/${param:FHIR_AUTHZ_SERVER_ID}/v1/token #USED
+
+    PICKER_CALLBACK_URL: https://${param:BASE_DOMAIN}/picker_oidc_callback #USED
+    PICKER_URL: https://${param:BASE_DOMAIN}/patient_authorization #USED
+    PICKER_DISPLAY_NAME: ${param:PICKER_DISPLAY_NAME} #USED
+    PICKER_CLIENT_ID: ${param:PICKER_CLIENT_ID} #USED
+    PICKER_CLIENT_SECRET: ${param:PICKER_CLIENT_SECRET} #USED
+    PATIENT_MOCK_SERVICE_URL: https://${param:BASE_DOMAIN}/patientMockService #USED
+
+    SMART_PROXY_CALLBACK_URL: https://${param:BASE_DOMAIN}/smart_proxy_callback #USED
+
+    AUTHZ_SERVER: ${param:FHIR_AUTHZ_SERVER_ID} #USED
+
+    STATE_COOKIE_SIGNATURE_KEY: ${param:STATE_COOKIE_SIGNATURE_KEY} #USED
+    EXPECTED_AUD_VALUE: ${param:FHIR_BASE_URL} #USED
+
+    OKTA_API_CLIENTID: ${param:OKTA_API_CLIENTID} #USED
+    OKTA_API_PRIVATEKEYFILE: ${param:OKTA_API_PRIVATEKEYFILE} #USED
+
+    #This is a link to the Okta "ORG LEVEL" authz server for getting tokens to be used against the Okta API.
+    #TODO: See if we can also use the custom authz server for cleanliness purposes.
+    OKTA_CLIENT_TOKEN_ENDPOINT: ${param:OKTA_ORG}/oauth2/v1/token #USED
+
+    DISABLE_REDIRECT_URI_VALIDATION: ${param:DISABLE_REDIRECT_URI_VALIDATION} #USED
 
     #DynamoDB Settings
-    CACHE_TABLE_NAME: 'refreshTokenCache'
-    CACHE_TTL_MINS: 1440
-#Provide additional access to allow read/write to our refresh token cache 
+    CACHE_TABLE_NAME: ${param:BASE_DOMAIN}_${param:CACHE_TABLE_NAME} #USED
+    CACHE_TTL_MINS: ${param:CACHE_TTL_MINS} #USED
+
+#Provide additional access to allow read/write to our refresh token cache
   iamRoleStatements:
     - Effect: Allow
       Action:
         - dynamodb:GetItem
         - dynamodb:PutItem
-      Resource: 
+      Resource:
         Fn::GetAtt:
           - refreshTokenCache
           - Arn
@@ -64,50 +130,14 @@ provider:
 #Lambda functions
 functions:
 
-##METADATA ENDPOINTS
-  smart-config-endpoint:
-    handler: ${self:provider.name}/metadata_endpoints.smartConfigHandler
-    events:
-      - http:
-          path: /smart-configuration
-          method: GET
-          cors: true
-      - http:
-          path: /.well-known/smart-configuration
-          method: GET
-          cors: true
-          
-  metadata-endpoint:          
-    handler: ${self:provider.name}/metadata_endpoints.metadataHandler
-    events:
-      - http:
-          path: /metadata
-          method: GET
-          cors: true
-     
-  keys_endpoint:
-    handler: ${self:provider.name}/keys.keysHandler
-    events:
-      - http:
-          path: /keys
-          method: GET
-          cors: true
-          
 ##AUTHORIZE ENDPOINTS
   smart-authorize-proxy:
     handler: ${self:provider.name}/authorize.authorizeHandler
     events:
       - http:
-          path: /authorize
+          path: /oauth2/${param:FHIR_AUTHZ_SERVER_ID}/smart/v1/authorize
           method: GET
 
-  picker-oidc-callback:
-    handler: ${self:provider.name}/authorize.pickerCallbackHandler
-    events:
-      - http:
-          path: /picker_oidc_callback
-          method: GET
-      
   smart-proxy-callback:
     handler: ${self:provider.name}/authorize.authorizeCallbackHandler
     events:
@@ -120,61 +150,68 @@ functions:
     handler: ${self:provider.name}/token.tokenHandler
     events:
       - http:
-          path: /token
+          path: /oauth2/${param:FHIR_AUTHZ_SERVER_ID}/v1/token
           method: POST
           cors: true
-          
-##PATIENT PICKER UI          
+
+##PATIENT PICKER ENDPOINTS
   patient_picker_get:
     handler: ${self:provider.name}/patient_picker.patientPickerGetHandler
     events:
       - http:
           path: /patient_authorization
           method: GET
-  
+
   patient_picker_post:
-    handler: ${self:provider.name}/patient_picker.patientPickerPostHandler          
+    handler: ${self:provider.name}/patient_picker.patientPickerPostHandler
     events:
       - http:
           path: /patient_authorization
           method: POST
 
-##TOKEN HOOK  
+  picker-oidc-callback:
+    handler: ${self:provider.name}/patient_picker.pickerCallbackHandler
+    events:
+      - http:
+          path: /picker_oidc_callback
+          method: GET
+
+##TOKEN HOOK
   token_hook:
     handler: ${self:provider.name}/token_hook.tokenHookHandler
     events:
       - http:
           path: /tokenhook
           method: POST
- 
- ##MOCK PATIENT API 
+
+ ##MOCK PATIENT API
   mock_patient_service:
     handler: ${self:provider.name}/mock_patient_service.mockPatientServiceHandler
     events:
       - http:
           path: /patientMockService
           method: GET
-          
-#############          
-#HAPI Proxies
-#############
-      - http:
-          path: /{proxy+}
-          method: ANY
-          cors: true
-          integration: http-proxy
-          request:
-            uri: http://hapi.fhir.org/baseR4/{proxy}
-            parameters:
-              paths:
-                proxy: true      
-#################
-#END HAPI Proxies                
-#################
+
+#Custom domain and TLS Certificate
+custom:
+  customCertificate:
+    certificateName: ${param:BASE_DOMAIN}
+    hostedZoneNames: ${param:BASE_URL_TLD}
+    subjectAlternativeNames:
+      - ${param:BASE_DOMAIN}
+
+  customDomain:
+    domainName: ${param:BASE_DOMAIN}
+    certificateName: ${param:BASE_DOMAIN}
+    basePath: ''
+    stage: ${self:provider.stage}
+    createRoute53Record: false
+    endpointType: regional
 
 # Other resources
 resources:
   Resources:
+  #DynamoDB for refresh token caching.
     refreshTokenCache:
       Type: AWS::DynamoDB::Table
       Properties:
@@ -191,3 +228,181 @@ resources:
         TimeToLiveSpecification:
           AttributeName: expires
           Enabled: true
+
+    #Cloudfront distribution to serve as an overall proxy to the solution.
+    authzServiceCFDistribution:
+      Type: "AWS::CloudFront::Distribution"
+      Properties:
+        DistributionConfig:
+          Aliases:
+          - ${param:BASE_DOMAIN}
+          Origins:
+          - #THIS ONE IS THE API GATEWAY
+            ConnectionAttempts: 3
+            ConnectionTimeout: 10
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginKeepaliveTimeout: 5
+              OriginProtocolPolicy: "https-only"
+              OriginReadTimeout: 30
+              OriginSSLProtocols:
+              - "TLSv1.2"
+            DomainName: ${param:API_GATEWAY_DOMAIN_NAME_BACKEND}
+            Id: ${param:API_GATEWAY_DOMAIN_NAME_BACKEND}
+            OriginPath: ""
+          - #THIS ONE IS THE AUTHZ SERVER
+            ConnectionAttempts: 3
+            ConnectionTimeout: 10
+            CustomOriginConfig:
+              HTTPPort: 80
+              HTTPSPort: 443
+              OriginKeepaliveTimeout: 5
+              OriginProtocolPolicy: "https-only"
+              OriginReadTimeout: 30
+              OriginSSLProtocols:
+              - "TLSv1.2"
+            DomainName: ${param:OKTA_CUSTOM_DOMAIN_NAME_BACKEND}
+            Id: ${param:OKTA_CUSTOM_DOMAIN_NAME_BACKEND}
+            OriginPath: ""
+          DefaultCacheBehavior:
+            AllowedMethods:
+            - "HEAD"
+            - "DELETE"
+            - "POST"
+            - "GET"
+            - "OPTIONS"
+            - "PUT"
+            - "PATCH"
+            Compress: false
+            CachePolicyId: "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+            OriginRequestPolicyId: "216adef6-5c7f-47e4-b989-5492eafa07d3"
+            SmoothStreaming: false
+            TargetOriginId: ${param:OKTA_CUSTOM_DOMAIN_NAME_BACKEND}
+            ViewerProtocolPolicy: "https-only"
+          CacheBehaviors:
+          -
+            AllowedMethods:
+            - "HEAD"
+            - "DELETE"
+            - "POST"
+            - "GET"
+            - "OPTIONS"
+            - "PUT"
+            - "PATCH"
+            Compress: false
+            CachePolicyId: "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+            OriginRequestPolicyId: "216adef6-5c7f-47e4-b989-5492eafa07d3"
+            PathPattern: /oauth2/${param:FHIR_AUTHZ_SERVER_ID}/smart/v1/authorize
+            SmoothStreaming: false
+            TargetOriginId: ${param:API_GATEWAY_DOMAIN_NAME_BACKEND}
+            ViewerProtocolPolicy: "https-only"
+          -
+            AllowedMethods:
+            - "HEAD"
+            - "DELETE"
+            - "POST"
+            - "GET"
+            - "OPTIONS"
+            - "PUT"
+            - "PATCH"
+            Compress: false
+            CachePolicyId: "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+            OriginRequestPolicyId: "216adef6-5c7f-47e4-b989-5492eafa07d3"
+            PathPattern: /smart_proxy_callback
+            SmoothStreaming: false
+            TargetOriginId: ${param:API_GATEWAY_DOMAIN_NAME_BACKEND}
+            ViewerProtocolPolicy: "https-only"
+          -
+            AllowedMethods:
+            - "HEAD"
+            - "DELETE"
+            - "POST"
+            - "GET"
+            - "OPTIONS"
+            - "PUT"
+            - "PATCH"
+            Compress: false
+            CachePolicyId: "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+            OriginRequestPolicyId: "216adef6-5c7f-47e4-b989-5492eafa07d3"
+            PathPattern: /oauth2/${param:FHIR_AUTHZ_SERVER_ID}/v1/token
+            SmoothStreaming: false
+            TargetOriginId: ${param:API_GATEWAY_DOMAIN_NAME_BACKEND}
+            ViewerProtocolPolicy: "https-only"
+          -
+            AllowedMethods:
+            - "HEAD"
+            - "DELETE"
+            - "POST"
+            - "GET"
+            - "OPTIONS"
+            - "PUT"
+            - "PATCH"
+            Compress: false
+            CachePolicyId: "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+            OriginRequestPolicyId: "216adef6-5c7f-47e4-b989-5492eafa07d3"
+            PathPattern: /patient_authorization
+            SmoothStreaming: false
+            TargetOriginId: ${param:API_GATEWAY_DOMAIN_NAME_BACKEND}
+            ViewerProtocolPolicy: "https-only"
+          -
+            AllowedMethods:
+            - "HEAD"
+            - "DELETE"
+            - "POST"
+            - "GET"
+            - "OPTIONS"
+            - "PUT"
+            - "PATCH"
+            Compress: false
+            CachePolicyId: "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+            OriginRequestPolicyId: "216adef6-5c7f-47e4-b989-5492eafa07d3"
+            PathPattern: /picker_oidc_callback
+            SmoothStreaming: false
+            TargetOriginId: ${param:API_GATEWAY_DOMAIN_NAME_BACKEND}
+            ViewerProtocolPolicy: "https-only"
+          -
+            AllowedMethods:
+            - "HEAD"
+            - "DELETE"
+            - "POST"
+            - "GET"
+            - "OPTIONS"
+            - "PUT"
+            - "PATCH"
+            Compress: false
+            CachePolicyId: "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+            OriginRequestPolicyId: "216adef6-5c7f-47e4-b989-5492eafa07d3"
+            PathPattern: /tokenhook
+            SmoothStreaming: false
+            TargetOriginId: ${param:API_GATEWAY_DOMAIN_NAME_BACKEND}
+            ViewerProtocolPolicy: "https-only"
+          -
+            AllowedMethods:
+            - "HEAD"
+            - "DELETE"
+            - "POST"
+            - "GET"
+            - "OPTIONS"
+            - "PUT"
+            - "PATCH"
+            Compress: false
+            CachePolicyId: "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+            OriginRequestPolicyId: "216adef6-5c7f-47e4-b989-5492eafa07d3"
+            PathPattern: /patientMockService
+            SmoothStreaming: false
+            TargetOriginId: ${param:API_GATEWAY_DOMAIN_NAME_BACKEND}
+            ViewerProtocolPolicy: "https-only"
+          Comment: ""
+          PriceClass: "PriceClass_All"
+          Enabled: true
+          ViewerCertificate:
+            AcmCertificateArn: ${certificate(${self:custom.customCertificate.certificateName}):CertificateArn}
+            MinimumProtocolVersion: "TLSv1.2_2021"
+            SslSupportMethod: "sni-only"
+          Restrictions:
+            GeoRestriction:
+              RestrictionType: "none"
+          HttpVersion: "http2"
+          DefaultRootObject: ""
+          IPV6Enabled: false

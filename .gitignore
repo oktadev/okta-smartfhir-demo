@@ -5,7 +5,15 @@ jspm_packages
 # Serverless directories
 .serverless
 
-serverless.yml
+serverless*.yml
 metadata_files/*.json
 
+!serverless.aws.example.yml
+!serverless.azure.example.yml
+
 *.pem
+*.jwks
+
+deploy/work/*.json
+deploy/work/state
+deploy/work/*.yml

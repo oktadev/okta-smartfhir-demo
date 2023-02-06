@@ -22,7 +22,7 @@ module.exports.patientPickerPostHandler = async (event, context) => {
 		},
 		multiValueHeaders: {
 			'Set-Cookie': [
-				'appProxyAuthzState=' + postResult.appProxyAuthzStateCookie + '; Secure; HttpOnly',
+				`appProxyAuthzState=${postResult.appProxyAuthzStateCookie}; Secure; HttpOnly; Path=/;`,
 				'apiAccessToken=; expires=Thu, 01 Jan 1970 00:00:00 GMT',
 				'pickerAuthzState=; expires=Thu, 01 Jan 1970 00:00:00 GMT'
 			]
@@ -30,4 +30,21 @@ module.exports.patientPickerPostHandler = async (event, context) => {
 	}
 }
 
-
+//Patient picker/custom consent screen OIDC callback endpoint - AWS implementation.
+//See the authorize library for full details.
+//This endpoint should be moved over to the patient picker module.
+module.exports.pickerCallbackHandler = async (event, context) => {
+	var pickerCallbackResult = await patientPickerLib.pickerCallbackHandler(event.queryStringParameters, event.headers[Object.keys(event.headers).find(key => key.toLowerCase() === 'cookie')])
+	return {
+		statusCode: pickerCallbackResult.statusCode,
+		body: JSON.stringify(pickerCallbackResult.body),
+		headers: {
+			Location: pickerCallbackResult.location
+		},
+		multiValueHeaders: {
+			'Set-Cookie': [
+				`apiAccessToken=${pickerCallbackResult.apiAccessTokenCookie}; Secure; HttpOnly; Path=/;`,
+			]
+		}
+	}
+}

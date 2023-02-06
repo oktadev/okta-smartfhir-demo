@@ -1,0 +1,11 @@
+{
+    "OKTA_ORG": "https://yourorg.okta(preview.com)",
+    "SUFFIX": "ASUFFIXYOUDLIKEADDEDTOALLYOURSTUFF",
+    "OKTA_API_KEY": "",
+    "AUTHZ_BASE_DOMAIN": "authz.your.domain",
+    "FHIR_BASE_URL": "https://yourbasefhirurl.your.domain",
+    "SAMPLE_USEREMAIL": "",
+    "SAMPLE_USERPASSWORD": "",
+    "SAMPLE_USERTYPE": "patient or practitioner",
+    "SAMPLE_USERFHIRID": "FHIR ID of user"
+}
