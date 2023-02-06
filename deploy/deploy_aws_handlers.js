@@ -143,6 +143,7 @@ module.exports.handlers = {
                 custom: {
                     customCertificate: {
                         certificateName: state.baseDomain,
+                        region: state.awsRegion,
                         hostedZoneNames: `${domainParts[domainParts.length - 2]}.${domainParts[domainParts.length - 1]}.`,
                         subjectAlternativeNames: [state.baseDomain]
                     }
