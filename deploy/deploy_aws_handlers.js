@@ -262,7 +262,7 @@ module.exports.handlers = {
         console.log('These values must be placed in the FHIR server\'s smart-configuration endpoint')
         console.log(`Issuer: https://${state.baseDomain}/oauth2/${state.authorizationServerId}`)
         console.log(`Authorize URL: https://${state.baseDomain}/oauth2/${state.authorizationServerId}/smart/v1/authorize`)
-        console.log(`Token URL: https://${state.baseDomain}/oauth2/${state.authorizationServerId}/v1/authorize`)
+        console.log(`Token URL: https://${state.baseDomain}/oauth2/${state.authorizationServerId}/v1/token`)
         console.log(`Keys URL: https://${state.baseDomain}/oauth2/${state.authorizationServerId}/v1/keys`)
     }
 }
