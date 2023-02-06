@@ -73,7 +73,7 @@ module.exports.handlers = {
 
         console.log('Saving private key file in the /keys folder...')
         const privateKeyFileDeployDestination = `../keys/okta_api_key.${state.deploymentName}.jwks`
-        fs.writeFileSync(state.privateKeyFileDeployDestination, JSON.stringify(state.oktaApiPrivateKey), 'utf-8');
+        fs.writeFileSync(privateKeyFileDeployDestination, JSON.stringify(state.oktaApiPrivateKey), 'utf-8');
     },
 
     handle_okta_create_custom_domain: async (rl, state) => {
