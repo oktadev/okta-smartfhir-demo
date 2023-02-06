@@ -69,10 +69,11 @@ module.exports.handlers = {
         state.pickerClientId = deployOutput.pickerClientId
         state.pickerClientSecret = deployOutput.pickerClientSecret
         state.authorizationServerId = deployOutput.authorizationServerId
-        state.oktaApiPrivateKeyFile = `../keys/okta_api_key.${state.deploymentName}.jwks`
+        state.oktaApiPrivateKeyFile = `./keys/okta_api_key.${state.deploymentName}.jwks`
 
         console.log('Saving private key file in the /keys folder...')
-        fs.writeFileSync(state.oktaApiPrivateKeyFile, JSON.stringify(state.oktaApiPrivateKey), 'utf-8');
+        const privateKeyFileDeployDestination = `../keys/okta_api_key.${state.deploymentName}.jwks`
+        fs.writeFileSync(state.privateKeyFileDeployDestination, JSON.stringify(state.oktaApiPrivateKey), 'utf-8');
     },
 
     handle_okta_create_custom_domain: async (rl, state) => {
