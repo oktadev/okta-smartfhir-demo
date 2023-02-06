@@ -2,11 +2,7 @@ const utils = require('./deploy_aws_utils')
 const YAML = require('yaml')
 const fs = require('fs')
 const crypto = require('crypto');
-const e = require('cors');
 const execSync = require('child_process').execSync;
-const oktaDeploy = require('./okta/deploy_okta_objects').main
-const oktaDomainCreate = require('./okta/add_custom_domain').main
-const oktaDomainVerify = require('./okta/verify_custom_domain').main
 
 const OKTA_ORG_EXAMPLE_CONFIG = './okta/okta_org_config_example.json'
 const SERVERLESS_AWS_EXAMPLE_CONFIG = '../serverless.aws.example.yml'
@@ -64,6 +60,8 @@ module.exports.handlers = {
         console.log('Installing pre-requisites...')
         execSync('npm install', {cwd: './okta', stdio: 'inherit'})
         console.log('Creating initial objects in Okta...')
+
+        const oktaDeploy = require('./okta/deploy_okta_objects').main
         const deployOutput = await oktaDeploy(oktaConfig, 'init')
 
         state.oktaApiClientId = deployOutput.oktaApiClientId
@@ -81,8 +79,8 @@ module.exports.handlers = {
         console.log('Creating custom domain in Okta...')
         const oktaConfigFile = `./work/okta_org_config.${state.deploymentName}.json`
         const oktaConfig = JSON.parse(fs.readFileSync(oktaConfigFile, 'utf-8'));
+        const oktaDomainCreate = require('./okta/add_custom_domain').main
 
-        var verificationResult = false
         const addDomainOutput = await oktaDomainCreate(oktaConfig)
         console.log(`Domain created in Okta - domain id: ${addDomainOutput}`)
         state.oktaDomainId = addDomainOutput
@@ -92,10 +90,11 @@ module.exports.handlers = {
         console.log('Verifying custom domain in Okta...')
         const oktaConfigFile = `./work/okta_org_config.${state.deploymentName}.json`
         const oktaConfig = JSON.parse(fs.readFileSync(oktaConfigFile, 'utf-8'));
+        const oktaDomainVerify = require('./okta/verify_custom_domain').main
 
         var verifyDomainOutput = await oktaDomainVerify(oktaConfig, state.oktaDomainId)
         while(!verifyDomainOutput) {
-            const readyRetry = await utils.askSpecific(rl, 'Domain verification is not yet complete- ensure your DNS records are setup as specified. Press "y" to retry, or ctrl+c to exit and revisit later.', ['y'])
+            await utils.askSpecific(rl, 'Domain verification is not yet complete- ensure your DNS records are setup as specified. Press "y" to retry, or ctrl+c to exit and revisit later.', ['y'])
             verifyDomainOutput = await oktaDomainVerify(oktaConfig, state.oktaDomainId)
         }
     },
