@@ -64,7 +64,7 @@ params:
     FHIR_AUTHZ_SERVER_ID: Get from Okta console - get ID of the FHIR API authz server.
 
     #Disable redirect_uri validation.
-    DISABLE_REDIRECT_URI_VALIDATION: true
+    DISABLE_REDIRECT_URI_VALIDATION: false
 
     #DynamoDB Settings
     CACHE_TABLE_NAME: refreshTokenCache
