@@ -248,11 +248,12 @@ module.exports.handlers = {
         const oktaConfig = JSON.parse(fs.readFileSync(oktaConfigFile, 'utf-8'));
 
         console.log('Finalizing Okta tenant configuration...')
-        const deployOutput = await oktaDeploy(oktaConfig, 'finalize')
+        const oktaDeploy = require('./okta/deploy_okta_objects').main
+        await oktaDeploy(oktaConfig, 'finalize')
 
         if(state.sampleUserName) {
             console.log('Creating sample user...')
-            const deployOutput = await oktaDeploy(oktaConfig, 'sampleuser')
+            await oktaDeploy(oktaConfig, 'sampleuser')
         }
     },
     handle_finished: async (rl, state) => {
