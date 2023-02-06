@@ -163,6 +163,7 @@ module.exports.handlers = {
                     custom: {
                         customCertificate: {
                             certificateName: state.baseDomain,
+                            region: 'us-east-1',
                             hostedZoneNames: `${domainParts[domainParts.length - 2]}.${domainParts[domainParts.length - 1]}.`,
                             subjectAlternativeNames: [state.baseDomain]
                         }
