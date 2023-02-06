@@ -6,6 +6,8 @@ Experimental support for SMART-launch v2 is available at https://github.com/danc
 For full documentation on this reference Okta-SMART implementation, please refer to the dedicated repository here:
 https://github.com/oktadev/okta-smartfhir-docs
 
+*Note - a new automated deploy process and instructions have been rolled out! If you were thrown off by this change, the original instructions are available [here](https://github.com/oktadev/okta-smartfhir-demo/tree/original-v1)*
+
 # Features
 The following features of the [SMART launch framework v1](http://hl7.org/fhir/smart-app-launch/1.0.0/) are supported:
 - Standalone launch sequence
