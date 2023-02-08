@@ -9,11 +9,14 @@ https://github.com/oktadev/okta-smartfhir-docs
 *Note - a new automated deploy process and instructions have been rolled out! If you were thrown off by this change, the original instructions are available [here](https://github.com/oktadev/okta-smartfhir-demo/tree/original-v1)*
 
 # Features
-The following features of the [SMART launch framework v1](http://hl7.org/fhir/smart-app-launch/1.0.0/) are supported:
+The following features of the [SMART launch framework v1](http://hl7.org/fhir/smart-app-launch/1.0.0/) and [SMART launch framework v2](http://hl7.org/fhir/smart-app-launch) are supported:
 - Standalone launch sequence
 - Launch parameters- including a patient picker for selecting the in-scope patient
 - Public and Confidential client applications
 - Support for partial consent (OAuth2 downscoping)
+- Token introspection endpoint
+- Asymmetric client authentication for both B2B and B2C use cases
+- Experimental support for the POST method on the /authorize endpoint
 
 # Components
 This entire project is managed by the [serverless framework](https://www.serverless.com/) - which is an easy way to manage numerous cloud resources as a single unit. The codebase was developed for, and has been primarily tested with AWS technologies.
