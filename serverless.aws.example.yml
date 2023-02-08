@@ -143,6 +143,13 @@ functions:
           path: /oauth2/${param:FHIR_AUTHZ_SERVER_ID}/smart/v1/authorize
           method: GET
 
+  smart-authorize-proxy-post:
+    handler: ${self:provider.name}/authorize.authorizePostHandler
+    events:
+      - http:
+          path: /oauth2/${param:FHIR_AUTHZ_SERVER_ID}/smart/v1/authorize
+          method: POST
+
   smart-proxy-callback:
     handler: ${self:provider.name}/authorize.authorizeCallbackHandler
     events:
