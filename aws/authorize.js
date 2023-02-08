@@ -1,10 +1,28 @@
 'use strict';
 const authorizeLib = require('../lib/authorize')
+const querystring = require('querystring');
 
 //Authorize endpoint - AWS implementation.
 //See the authorize library for full details.
 module.exports.authorizeHandler = async (event, context) => {
 	var authorizeResult = await authorizeLib.authorizeHandler(event.queryStringParameters)
+	return {
+		statusCode: authorizeResult.statusCode,
+		body: JSON.stringify(authorizeResult.body),
+		headers: {
+			Location: authorizeResult.location
+		},
+		multiValueHeaders: {
+			'Set-Cookie': [
+				'pickerAuthzState=' + authorizeResult.pickerAuthzCookie + '; Secure; HttpOnly; Path=/;',
+				'origRequest=' + authorizeResult.origRequestCookie + '; Secure; HttpOnly; Path=/;'
+			]
+		}
+	}
+}
+
+module.exports.authorizePostHandler = async (event, context) => {
+	var authorizeResult = await authorizeLib.authorizeHandler(querystring.parse(event.body))
 	return {
 		statusCode: authorizeResult.statusCode,
 		body: JSON.stringify(authorizeResult.body),
