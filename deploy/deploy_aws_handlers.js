@@ -266,6 +266,7 @@ module.exports.handlers = {
         console.log(`Issuer: https://${state.baseDomain}/oauth2/${state.authorizationServerId}`)
         console.log(`Authorize URL: https://${state.baseDomain}/oauth2/${state.authorizationServerId}/smart/v1/authorize`)
         console.log(`Token URL: https://${state.baseDomain}/oauth2/${state.authorizationServerId}/v1/token`)
+        console.log(`Introspect URL: https://${state.baseDomain}/oauth2/${state.authorizationServerId}/v1/introspect`)
         console.log(`Keys URL: https://${state.baseDomain}/oauth2/${state.authorizationServerId}/v1/keys`)
     }
 }
