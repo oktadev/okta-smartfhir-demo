@@ -1,8 +1,6 @@
 # okta-smartfhir-demo
 This repository contains all of the components necessary to provide a SMART-launch compatible authorization platform leveraging Okta as the core identity authentication and authorization service.
 
-Experimental support for SMART-launch v2 is available at https://github.com/dancinnamon-okta/okta-smartfhirv2-demo which will shortly merge into this repository.
-
 For full documentation on this reference Okta-SMART implementation, please refer to the dedicated repository here:
 https://github.com/oktadev/okta-smartfhir-docs
 
