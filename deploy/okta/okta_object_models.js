@@ -200,7 +200,9 @@ module.exports.authzScopes = [
         "displayName": "launch/patient",
         "consent": "IMPLICIT",
         "metadataPublish": "NO_CLIENTS"
-    },
+    }
+]
+module.exports.smartv1Scopes = [
     {
         "name": "patient/Patient.read",
         "description": "Ability to read the selected patient's record",
@@ -212,6 +214,27 @@ module.exports.authzScopes = [
     },
     {
         "name": "patient/Observation.read",
+        "description": "Ability to read the selected patient's vital signs",
+        "system": false,
+        "default": false,
+        "displayName": "Ability to read the selected patient's vital signs",
+        "consent": "REQUIRED",
+        "metadataPublish": "NO_CLIENTS"
+    }
+]
+
+module.exports.smartv2Scopes = [
+    {
+        "name": "patient/Patient.rs",
+        "description": "Ability to read the selected patient's record",
+        "system": false,
+        "default": false,
+        "displayName": "Ability to read the selected patient's record",
+        "consent": "REQUIRED",
+        "metadataPublish": "NO_CLIENTS"
+    },
+    {
+        "name": "patient/Observation.rs",
         "description": "Ability to read the selected patient's vital signs",
         "system": false,
         "default": false,

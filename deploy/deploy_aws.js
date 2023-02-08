@@ -90,6 +90,7 @@ function initState() {
     return {
         currentStep: STATE_QUESTIONNAIRE,
         deploymentName: '',
+        smartVersions: '',
         awsRegion: '',
         baseDomain: '',
         fhirBaseUrl: '',

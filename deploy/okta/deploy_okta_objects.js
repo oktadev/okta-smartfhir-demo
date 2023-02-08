@@ -249,12 +249,32 @@ async function createAuthzServer(config, client) {
 
 async function addAuthzScopes(config, client, authzServerId) {
     //We're not dealing with "existing" items here.  That's handled at the authz server level.  If we're here, it means we definitely need to add scopes.
-    console.log('Adding SMART scopes to the authorization server...')
+    console.log('Adding global SMART scopes to the authorization server...')
     const scopes = models.authzScopes
     for(const scope of scopes) {
         console.log('Adding scope: ' + scope.name)
         console.log(scope)
         await client.createOAuth2Scope(authzServerId, scope)
+    }
+    
+    console.log('Adding SMART v1 specific scopes to the authorization server...')
+    if(config.SMART_VERSIONS_SUPPORTED.includes(1)) {
+        const scopes = models.smartv1Scopes
+        for(const scope of scopes) {
+            console.log('Adding scope: ' + scope.name)
+            console.log(scope)
+            await client.createOAuth2Scope(authzServerId, scope)
+        }
+    }
+
+    console.log('Adding SMART v2 specific scopes to the authorization server...')
+    if(config.SMART_VERSIONS_SUPPORTED.includes(2)) {
+        const scopes = models.smartv2Scopes
+        for(const scope of scopes) {
+            console.log('Adding scope: ' + scope.name)
+            console.log(scope)
+            await client.createOAuth2Scope(authzServerId, scope)
+        }
     }
     console.log('Finished adding scopes.')
 }

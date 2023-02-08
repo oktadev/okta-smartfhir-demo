@@ -11,6 +11,7 @@ module.exports.handlers = {
     handle_deploy_questionnaire: async (rl, state) => {
         console.log('Collecting initial configuration information...')
         state.deploymentName = await utils.askPattern(rl, 'What would you like to name your deployment? This name is appended to all objects in Okta, and is also appended to all objects in AWS for easy association (Example: SMARTv1)', /.+/)
+        state.smartVersions = await utils.askSpecific(rl, 'What SMART versions would you like to support? (v1, v2, both)', ['v1','v2','both'])
         state.awsRegion = await utils.askPattern(rl, 'What AWS region are you deploying in? (Example: us-east-1)', /.+/)
         state.baseDomain = await utils.askPattern(rl, 'What will the base domain of your authorization service be? (Example: smartauthz.your.tld)', /.+/)
         state.fhirBaseUrl = await utils.askPattern(rl, 'What is the base URL of the FHIR server you are securing? (Example: https://fhir.your.tld/r4)', /.+/)
@@ -47,6 +48,16 @@ module.exports.handlers = {
         oktaConfig.SAMPLE_USERPASSWORD = state.sampleUserPassword ? state.sampleUserPassword : ''
         oktaConfig.SAMPLE_USERTYPE = state.sampleUserType ? state.sampleUserType : ''
         oktaConfig.SAMPLE_USERFHIRID = state.sampleUserFhirId ? state.sampleUserFhirId : ''
+
+        if(state.smartVersions == 'v1') {
+            oktaConfig.SMART_VERSIONS_SUPPORTED = [1]
+        }
+        else if(state.smartVersions == 'v2') {
+            oktaConfig.SMART_VERSIONS_SUPPORTED = [2]
+        }
+        else if(state.smartVersions == 'both') {
+            oktaConfig.SMART_VERSIONS_SUPPORTED = [1, 2]
+        }
 
         console.log(`Writing new config file at: ${oktaConfigFile}`)
         fs.writeFileSync(oktaConfigFile, JSON.stringify(oktaConfig), 'utf-8');
