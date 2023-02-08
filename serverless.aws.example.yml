@@ -47,7 +47,10 @@ params:
     #The backend domain name for the api gateway deployment.
     API_GATEWAY_DOMAIN_NAME_BACKEND: get this value from serverless create_domain output
 
-    #OAuth2 M2M clientid/secret used to call Okta API to get scope data for the patient picker.
+    #OAuth2 M2M data used to call Okta API.
+    #Used by:
+    #Authorize endpoint to validate redirect_uri
+    #Patient picker to get scope data for the patient picker
     OKTA_API_CLIENTID: Get from patient picker app from okta console
     OKTA_API_PRIVATEKEYFILE: ./keys/okta-api-key.jwks
 
@@ -88,6 +91,8 @@ provider:
     OIDC_AUTHORIZE_URL: https://${param:BASE_DOMAIN}/oauth2/${param:FHIR_AUTHZ_SERVER_ID}/v1/authorize #USED
     OIDC_INTROSPECT_URL: https://${param:BASE_DOMAIN}/oauth2/${param:FHIR_AUTHZ_SERVER_ID}/v1/introspect #USED
     INTERNAL_TOKEN_URL: https://${param:OKTA_CUSTOM_DOMAIN_NAME_BACKEND}/oauth2/${param:FHIR_AUTHZ_SERVER_ID}/v1/token #USED
+    INTERNAL_INTROSPECT_URL: https://${param:OKTA_CUSTOM_DOMAIN_NAME_BACKEND}/oauth2/${param:FHIR_AUTHZ_SERVER_ID}/v1/introspect
+    INTERNAL_INTROSPECT_RELATIVE_ENDPOINT: /oauth2/${param:FHIR_AUTHZ_SERVER_ID}/v1/introspect #USED
 
     PICKER_CALLBACK_URL: https://${param:BASE_DOMAIN}/picker_oidc_callback #USED
     PICKER_URL: https://${param:BASE_DOMAIN}/patient_authorization #USED
@@ -151,6 +156,15 @@ functions:
     events:
       - http:
           path: /oauth2/${param:FHIR_AUTHZ_SERVER_ID}/v1/token
+          method: POST
+          cors: true
+
+##INTROSPECT ENDPOINT
+  introspect-proxy:
+    handler: ${self:provider.name}/introspect.introspectHandler
+    events:
+      - http:
+          path: /oauth2/${param:FHIR_AUTHZ_SERVER_ID}/v1/introspect
           method: POST
           cors: true
 
@@ -326,6 +340,22 @@ resources:
             CachePolicyId: "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
             OriginRequestPolicyId: "216adef6-5c7f-47e4-b989-5492eafa07d3"
             PathPattern: /oauth2/${param:FHIR_AUTHZ_SERVER_ID}/v1/token
+            SmoothStreaming: false
+            TargetOriginId: ${param:API_GATEWAY_DOMAIN_NAME_BACKEND}
+            ViewerProtocolPolicy: "https-only"
+          -
+            AllowedMethods:
+            - "HEAD"
+            - "DELETE"
+            - "POST"
+            - "GET"
+            - "OPTIONS"
+            - "PUT"
+            - "PATCH"
+            Compress: false
+            CachePolicyId: "4135ea2d-6df8-44a3-9df3-4b5a84be39ad"
+            OriginRequestPolicyId: "216adef6-5c7f-47e4-b989-5492eafa07d3"
+            PathPattern: /oauth2/${param:FHIR_AUTHZ_SERVER_ID}/v1/introspect
             SmoothStreaming: false
             TargetOriginId: ${param:API_GATEWAY_DOMAIN_NAME_BACKEND}
             ViewerProtocolPolicy: "https-only"
