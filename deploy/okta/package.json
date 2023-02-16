@@ -10,6 +10,6 @@
   "license": "MIT",
   "dependencies": {
     "@okta/okta-sdk-nodejs": "^6.6.0",
-    "node-jose": "^2.1.1"
+    "node-jose": "^2.2.0"
   }
 }
